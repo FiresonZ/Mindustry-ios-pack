@@ -146,7 +146,7 @@ if [ -f "$IOS_GRADLE" ]; then
     # 在这些之后找到第一处"普通代码行"前插入补丁。找不到插入点时直接塞到第 2 行。
     perl -0pi -e '
       my $patch = qq{
-'$INJECT_MARKER'
+'"$INJECT_MARKER"'
 // 把 "159.7" 之类带小数的构建号裁剪成整数部分 "159"，避免 toInteger/parseInt 抛 NumberFormatException。
 // 所有需要把构建号当整数使用的地方，都用 _stripDec(xxx) 包一层，或直接在变量后接 .replaceAll("\\\\..*","")
 def _stripDec_bv(Object v) {
@@ -185,9 +185,9 @@ def _stripDec_bv(Object v) {
       return $expr if $expr =~ /replaceAll/;               # 已经有补丁，跳过
       if ($expr =~ /"\s*$/) {
         # 字面字符串 / GString 结尾: 需要 .toString() 再 replaceAll
-        return $expr . '.toString().replaceAll("\\\\..*","")';
+        return $expr . '"'"'.toString().replaceAll("\\\\..*","")'"'"';
       }
-      return $expr . '.replaceAll("\\\\..*","")';
+      return $expr . '"'"'.replaceAll("\\\\..*","")'"'"';
     }
 
     # ---------- Group A: EXPR.toInteger() / .toLong() / .toBigInteger() ----------
