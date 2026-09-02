@@ -63,6 +63,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         name: Checkout packager repo
+        with:
+          # 本仓库不使用 Git Submodule，显式关闭可避免 post-job cleanup 因 runner 残留或嵌套
+          # git 目录（如 build-root/Mindustry）误报 "No url found for submodule path 'Mindustry'"
+          submodules: false
 
       - name: Restore LAST_VERSION cache (跨 run 状态)
         uses: actions/cache/restore@v6
@@ -184,6 +188,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         name: Checkout packager repo
+        with:
+          # 本仓库不使用 Git Submodule；build-ipa.sh 会在 build-root 下通过 git clone 拉取
+          # Mindustry/Arc（嵌套 git 目录），关闭 submodules 避免 post-job 清理误判为子模块报错
+          submodules: false
 
       - name: Echo build parameters
         shell: bash
