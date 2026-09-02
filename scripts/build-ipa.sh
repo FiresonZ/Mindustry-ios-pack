@@ -116,67 +116,85 @@ if [ -f "$IOS_GRADLE" ]; then
     sed -i    's/iosSkipSigning = false/iosSkipSigning = true/' "$IOS_GRADLE"
   echo "    (A) 已设置 iosSkipSigning=true" >&2
 
-  # (A.2) 解除 RoboVM 链接对 Mindustry/ios/libs/libarc-freetype.a 的硬路径依赖。
-  #       上游 build.gradle 一般写为 linkArgs = [
-  #         "-force_load", new File(project(":ios").projectDir, "libs/libarc-freetype.a").absolutePath,
-  #         "-force_load", "Mindustry/ios/libs/libarc-freetype.a",
-  #       ]
-  #       两种形式：(a) -force_load 与路径作为两个独立字符串元素，(b) 连写在一个字符串里。
-  #       当 Arc 侧 freetype 原生库未被拷贝到该目录时，clang 直接报
-  #       "library '.../libarc-freetype.a' not found" 并失败。
-  #       修复：把 "-force_load", <任意含 libarc-freetype.a 的路径表达式> 这一对元素整体
-  #       替换为单个元素 "-larc-freetype"，并在 linkArgs 数组开头补上 -L ${project.projectDir}/libs
-  #       的搜索路径；找不到 .a 时再由 (C.1) 步骤从 Arc 构建产物中搜索/提取/生成占位静态库，
-  #       从根上避免“硬路径不存在 → 链接失败”的 CI 断链。
+  # (A.2) 根据 Anuken/Mindustry v159.7 上游 ios/build.gradle 与 robovm.xml 的真实结构，
+  #       以及 VincentZyu233/Mindustry-for-ios 的 iOS 适配写法，RoboVM 扩展本身没有
+  #       `linkArgs` / `extraLinkArgs` / `extraLinkFlags` 这三个属性（直接写会抛
+  #       "Could not set unknown property 'linkArgs' for extension 'robovm'"）。
+  #       上游 v159 实际通过：
+  #         1) <libs><lib>libs/libarc-freetype.a</lib></libs> 声明在 robovm.xml，
+  #         2) tasks.register('copyNatives') 把 ../../Arc/natives/natives-freetype-ios/libs
+  #            和 ../../Arc/natives/natives-ios/libs 拷入 ios/libs。
+  #       于是在 build-ipa.sh 侧不再“伪造 linkArgs = […]”注入；改为：
+  #         a) 兜底改写 copyNatives 的 from 列表，覆盖本 packager 目录结构，
+  #            同时让 createIPA 显式依赖 copyNatives（上游 deploy 才依赖，tools:pack
+  #            执行 copyAssets→copyNatives 但 CI 直接跑 :ios:createIPA 会绕过）。
+  #         b) 参考 VincentZyu 的 afterEvaluate 注入，把 ios/libs 目录追加到
+  #            RoboVMConfig.frameworkPaths / libraryPaths，避免 libs/libarc-freetype.a
+  #            相对路径在 CI 上解析失败；同时顺带补上 backend-robovm 抽取目录缺失导致
+  #            的 "search path '…/backend-robovm/…/META-INF/robovm/ios/libs' not found"
+  #            告警（用 rootProject / buildscript 类路径兜底）。
   perl -0777 -pi -e '
-    # 用 chr(39) 代替单引号字符本身，避免在 shell 单引号块中出现原生 '\'' 导致 shell 提前闭合
+    # 关键：脚本中绝不出现 shell 单引号字符本身（会立刻闭合外层 shell '\'' 单引号块），
+    #      全部用 chr(39) 拼接。
     my $SQ = chr(39);
-    my $DQ = chr(34);
-    # ---- 形式 A：linkArgs 中两个独立元素："-force_load", <expression including libarc-freetype.a> ----
-    # 用非贪婪匹配直到下一元素分隔（逗号或数组结尾 ]），避免嵌套括号/方法链无法解析
-    s/([\x22\x27])-force_load\1\s*,\s*([\x22\x27]?)(.*?libarc-freetype\.a.*?)\2(?=\s*,|\s*\])/$SQ."-larc-freetype".$SQ/gise;
 
-    # ---- 形式 B：单字符串连写："-force_load /path/libarc-freetype.a" ----
-    s/([\x22\x27])\s*-force_load\s+\S*?libarc-freetype\.a\s*\1/$SQ."-larc-freetype".$SQ/ge;
-    # （形式 B 不使用 /i /s：非必要，避免干扰）
+    # 1) 任务链：确保 createIPA 在 copyNatives 执行完后再跑
+    if (!/createIPA\s*\.dependsOn\s+(?:[^\n]*?\b)copyNatives\b/) {
+      s/(createIPA\.dependsOn\s+build)/$1\ncreateIPA.dependsOn copyNatives/;
+    }
+
+    # 2) copyNatives：在原 copy { from "…/libs", "…/libs" 行之后追加额外的 from(…) / include 语句，
+    #    覆盖 Arc 原生构建目录。
+    my $task_start = qq{tasks\\.register\\($SQ copyNatives $SQ \\)};
+    s{$task_start \s*\{ [\s\S]*? copy\s*\{ [\s\S]*? \b from\b \s+ ([^\n]+)}{
+      my $orig = $&;
+      my $extra = qq{\n            // === build-ipa.sh 注入：Arc freetype/ios 静态库搜索范围扩展 ===\n            from("../../Arc/natives/natives-freetype-ios/build/libs",\n                 "../../Arc/natives/natives-freetype-ios/build/robovm",\n                 "../../Arc/natives/natives-ios/build/libs",\n                 "../../Arc/natives/natives-ios/build/robovm",\n                 "../../Arc/backends/backend-robovm/build/libs",\n                 rootProject.file("../Arc/natives/natives-freetype-ios/libs"),\n                 rootProject.file("../Arc/natives/natives-ios/libs"))\n            include "**/*.a"\n            eachFile { println "[copyNatives+] copy \$it.sourcePath -> \$it.targetPath" }\n            // === 注入结束 ===};
+      $orig . $extra;
+    }gixe;
+
+    # 3) afterEvaluate：参照 Mindustry-for-ios，给 RoboVM 构建任务附加 ios/libs 搜索路径。
+    #    关键：不用 org.robovm.* 直接类名引用 → 避免 Groovy 解析期把顶层 "org" 当成 project 属性
+    #    炸 MissingPropertyException。改按任务名字匹配 + 动态 hasProperty("robovmConfig") 访问。
+    my $inject = q{
+
+// === build-ipa.sh 注入：RoboVMConfig 附加 ios/libs 搜索路径，避免 libs/libarc-freetype.a 相对路径找不到
+afterEvaluate {
+    def iosLibs = file("libs")
+    if (!iosLibs.exists()) iosLibs.mkdirs()
+    def robovmBuildTaskNames = ["createIPA", "launchIPhoneSimulator", "launchIPadSimulator", "launchIOSDevice"]
+    tasks.matching { robovmBuildTaskNames.contains(it.name) }.configureEach { t ->
+        try {
+            if (t.hasProperty("robovmConfig") && t.robovmConfig != null) {
+                def cfg = t.robovmConfig
+                if (cfg.hasProperty("frameworkPaths") && cfg.frameworkPaths != null) {
+                    if (!cfg.frameworkPaths.contains(iosLibs)) cfg.frameworkPaths.add(iosLibs)
+                }
+                if (cfg.hasProperty("libraryPaths") && cfg.libraryPaths != null) {
+                    if (!cfg.libraryPaths.contains(iosLibs.absolutePath)) cfg.libraryPaths.add(iosLibs.absolutePath)
+                }
+                try {
+                    def backendJarDir = rootProject.file("../Arc/backends/backend-robovm/build/libs")
+                    if (backendJarDir.exists()) {
+                        def extractedDir = new File(System.getProperty("user.home"),
+                            ".robovm/cache/ios/arm64/release" + backendJarDir.absolutePath +
+                            ".extracted/META-INF/robovm/ios/libs")
+                        if (extractedDir.exists() && cfg.frameworkPaths != null
+                            && !cfg.frameworkPaths.contains(extractedDir.parentFile.parentFile)) {
+                            cfg.frameworkPaths.add(extractedDir.parentFile.parentFile)
+                        }
+                    }
+                } catch (ignored) {}
+            }
+        } catch (Exception e) {
+            println "[build-ipa] warn: attach ios/libs to RoboVMConfig failed: " + e.message
+        }
+    }
+}
+// === 注入结束 ===
+};
+    $_ .= $inject;
   ' "$IOS_GRADLE"
-  # 再确保在 linkArgs/extraLinkFlags 声明位置补上 Mindustry/ios/libs 的 -L 搜索路径
-  perl -0777 -pi -e '
-    my $libs_added = 0;
-    # 形式 1：linkArgs = [ ... ] / extraLinkArgs = [ ... ] / extraLinkFlags = [ ... ]（键值写法）
-    s{((?:linkArgs|extraLinkArgs|extraLinkFlags)\s*=\s*\[)}{
-      $libs_added++;
-      $1 . qq{\n        "-L", "\${project.projectDir}/libs",\n        "-Wl,-search_paths_first",}
-    }ge;
-    # 形式 2：robovm { ... 闭包内赋值 linkArgs = [ ... ]（robovm 扩展 DSL 的常见写法）—— 命中与形式 1 等价，这里补兜底
-    if (!$libs_added) {
-      s{(\brobovm\s*\{[\s\S]*?\blinkArgs\s*=\s*\[)}{
-        $libs_added++;
-        $1 . qq{\n          "-L", "\${project.projectDir}/libs",\n          "-Wl,-search_paths_first",}
-      }sge;
-    }
-    # 形式 3：createIPA / robovmCreateIPATask 块内 ext.linkArgs（极端上游：完全靠任务扩展属性）
-    if (!$libs_added) {
-      s{((?:tasks\.(?:create|named)\s*\(\s*["'"'"']createIPA["'"'"']\s*\)(?:\s*\.configure)?\s*\{|createIPA\s*\{)[\s\S]*?)}{
-        $libs_added++;
-        my $head = $1;
-        $head . qq{\n    project.ext.set("linkArgs", (project.hasProperty("linkArgs") ? project.property("linkArgs") : []) + ["-L", new File(project.projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]);\n}
-      }sge;
-    }
-    # 形式 4：完全找不到上述任何声明 → 兜底改 robovm { … } 闭包末尾（如果存在 robovm{}），在其中加 linkArgs += […]
-    #        注意：不再引用 org.robovm.* 类名（未显式 import 的 Groovy 脚本解析阶段会把 "org" 当 project 属性而抛 MissingPropertyException）。
-    if (!$libs_added) {
-      if (!(s{(\brobovm\s*\{)}{
-        $libs_added++;
-        $1 . qq{\n    // === build-ipa.sh 注入：确保链接器搜索 Mindustry/ios/libs\n    linkArgs = (this.hasProperty("linkArgs") && this.linkArgs != null ? this.linkArgs : []) + ["-L", new File(project.projectDir, "libs").absolutePath, "-Wl,-search_paths_first"];\n}
-      }sge)) {
-        # 形式 5：连 robovm{} 块都没有 → 直接在文件末尾用 project.ext 设置 linkArgs，由 RoboVM 插件在配置读取时解析
-        $_ .= qq{\n// === build-ipa.sh 注入：链接器搜索 Mindustry/ios/libs (兜底)\nproject.ext.set("linkArgs", (project.hasProperty("linkArgs") ? project.property("linkArgs") : []) + ["-L", new File(project(":ios").projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]);\n// === 注入结束 ===\n};
-        $libs_added++;
-      }
-    }
-  ' "$IOS_GRADLE"
-  echo "    (A.2) 解除 libarc-freetype.a 硬路径依赖：linkArgs 中的 -force_load + libarc-freetype.a 路径对替换为 -larc-freetype + 自动 -L Mindustry/ios/libs" >&2
+  echo "    (A.2) 参考上游 v159 + Mindustry-for-ios：让 createIPA dependsOn copyNatives；扩展 copyNatives from；afterEvaluate 把 ios/libs 注入 RoboVMConfig 的搜索路径" >&2
 
   # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
   #     上游 ios/build.gradle 在配置阶段把 buildversion（传入 "159.7"）当整数解析时抛异常。
