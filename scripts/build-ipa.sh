@@ -28,11 +28,23 @@ RELEASE_TAG="v${BUILD_VERSION}"
 # 固定：本工程默认输出未签名 IPA，由 TrollStore/AltStore 等侧载工具安装
 SKIP_SIGNING="true"
 
+# ========= 兼容小数版本号（如 159.7）与整数版本（如 146） =========
+# BUILD_INT  ：取小数点前的整数主版本（用于 Gradle .toInteger() 兜底）
+# DISPLAY_VERSION：iOS 显示版本号（严格 3 段式，符合 CFBundleShortVersionString 规范）
+if [[ "${BUILD_VERSION}" == *.* ]]; then
+  BUILD_INT="${BUILD_VERSION%%.*}"
+  DISPLAY_VERSION="8.${BUILD_VERSION}"          # 例: 159.7 -> 8.159.7
+else
+  BUILD_INT="${BUILD_VERSION}"
+  DISPLAY_VERSION="8.${BUILD_VERSION}.0"        # 例: 146  -> 8.146.0
+fi
+
 echo "=========================================================="
 echo " Mindustry iOS IPA 构建（未签名版）"
 echo " Release Tag    : ${RELEASE_TAG}"
-echo " Build Version  : ${BUILD_VERSION}"
-echo " iOS Display Ver: 8.${BUILD_VERSION}.0"
+echo " Build Version  : ${BUILD_VERSION}   (整数主版本=${BUILD_INT})"
+echo " iOS Display Ver: ${DISPLAY_VERSION}  (CFBundleShortVersionString)"
+echo " CFBundleVersion: ${BUILD_VERSION}"
 echo " Signing Mode   : UNSIGNED (TrollStore / AltStore / Sideloadly)"
 echo "=========================================================="
 
@@ -94,6 +106,46 @@ cd "$BUILD_DIR/Mindustry"
 # 给 gradlew 执行权限
 chmod +x gradlew
 
+# ========= 提前 patch ios/build.gradle（必须在首次执行 gradle 之前完成） =========
+echo "==> [3b/7] Patch ios/build.gradle：启用未签名 + 兼容小数版本号" >&2
+IOS_GRADLE="${BUILD_DIR}/Mindustry/ios/build.gradle"
+if [ -f "$IOS_GRADLE" ]; then
+  # (A) 强制 RoboVM 跳过 codesign（无需证书 / 描述文件）
+  #     先尝试 macOS (BSD) sed，失败再回退到 GNU sed
+  sed -i '' 's/iosSkipSigning = false/iosSkipSigning = true/' "$IOS_GRADLE" 2>/dev/null || \
+    sed -i    's/iosSkipSigning = false/iosSkipSigning = true/' "$IOS_GRADLE"
+  echo "    (A) 已设置 iosSkipSigning=true" >&2
+
+  # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
+  #     上游 ios/build.gradle 第 28 行附近：buildversion.toInteger() 或 Integer.parseInt(buildversion)
+  #     对于输入 "159.7" → 直接报 NumberFormatException
+  #     注入 replaceAll("\\..*","") 去掉小数部分后再转 int，兼容整数 & 小数：
+  #       buildversion.toInteger()
+  #         => buildversion.replaceAll("\\..*","").toInteger()
+  #       Integer.parseInt(buildversion)
+  #         => Integer.parseInt(buildversion.replaceAll("\\..*",""))
+  #     注：Groovy/Java 字符串字面量里 "\\.." 才表示正则的 literal dot \..
+  #         因此目标文件需写双反斜杠；下面用 perl 跨平台（macOS / Linux 行为一致）完成替换
+  BEFORE_COUNT=$(grep -cE '\.toInteger\(\)|Integer\.parseInt\(' "$IOS_GRADLE" 2>/dev/null || echo 0)
+  if [ "$BEFORE_COUNT" -gt 0 ]; then
+    # perl -0pi 跨平台一致 in-place edit，shell 单引号内 \\\\ 交给 perl s/// 后变成 2 个反斜杠
+    perl -0pi -e '
+      s/\b(buildversion)\.toInteger\(\)/$1.replaceAll("\\\\..*","").toInteger()/g;
+      s/Integer\.parseInt\((buildversion)\)/Integer.parseInt($1.replaceAll("\\\\..*",""))/g;
+    ' "$IOS_GRADLE"
+    PATCHED_COUNT=$(grep -c 'replaceAll' "$IOS_GRADLE" 2>/dev/null || echo 0)
+    echo "    (B) 小数版本兼容：发现 ${BEFORE_COUNT} 处整数解析 → 成功注入 ${PATCHED_COUNT} 处 replaceAll 保护" >&2
+    # 关键行诊断：打印第 20~40 行，便于 CI 日志确认补丁位置
+    echo "    --- ios/build.gradle L20~40 (诊断) ---" >&2
+    sed -n '20,40p' "$IOS_GRADLE" >&2 || true
+    echo "    -------------------------------------" >&2
+  else
+    echo "    (B) 未发现 .toInteger()/Integer.parseInt，跳过小数兼容补丁" >&2
+  fi
+else
+  echo "WARN: 未找到 ios/build.gradle，签名与版本兼容补丁将跳过！" >&2
+fi
+
 GRADLE_ARGS=(
   "-Prelease"
   "-Pbuildversion=${BUILD_VERSION}"
@@ -104,12 +156,12 @@ GRADLE_ARGS=(
 echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >&2
 
 # ========= 初始化 robovm.properties（确保 CFBundleShortVersionString 一致） =========
-echo "==> [4/7] 初始化 ios/robovm.properties（版本严格同步 8.${BUILD_VERSION}.0）" >&2
+echo "==> [4/7] 初始化 ios/robovm.properties（版本严格同步 ${DISPLAY_VERSION}）" >&2
 ROBOVM_PROPS="${BUILD_DIR}/Mindustry/ios/robovm.properties"
 cat > "$ROBOVM_PROPS" <<EOF
 # 由自动化脚本生成 - 严格遵循版本号
 app.id=io.anuke.mindustry
-app.version=8.${BUILD_VERSION}.0
+app.version=${DISPLAY_VERSION}
 app.mainclass=mindustry.ios.IOSLauncher
 app.executable=IOSLauncher
 app.name=Mindustry
@@ -143,10 +195,7 @@ if [ -f "$VER_FILE" ]; then
 fi
 
 echo "==> [7/7] 构建未签名 IPA (ios:createIPA, iosSkipSigning=true)" >&2
-# 通过临时修改 ios/build.gradle 强制跳过签名（无需证书 / 描述文件）
-sed -i '' 's/iosSkipSigning = false/iosSkipSigning = true/' ios/build.gradle || \
-  sed -i 's/iosSkipSigning = false/iosSkipSigning = true/' ios/build.gradle
-echo "    已设置 iosSkipSigning=true（RoboVM 不调用 codesign）" >&2
+echo "    iosSkipSigning 已在 [3b/7] 阶段提前设置 ✓" >&2
 
 ./gradlew "${GRADLE_ARGS[@]}" :ios:createIPA
 
@@ -160,7 +209,7 @@ if [ -z "$IPA_FILE" ]; then
 fi
 
 # 重命名产物为规范文件名：Mindustry-iOS-v{build}_{shortver}.ipa
-IPA_FINAL_NAME="Mindustry-iOS-${RELEASE_TAG}_8.${BUILD_VERSION}.0.ipa"
+IPA_FINAL_NAME="Mindustry-iOS-${RELEASE_TAG}_${DISPLAY_VERSION}.ipa"
 IPA_FINAL="${WORKDIR}/dist/${IPA_FINAL_NAME}"
 mkdir -p "$(dirname "$IPA_FINAL")"
 cp "$IPA_FILE" "$IPA_FINAL"
@@ -172,7 +221,7 @@ META="${WORKDIR}/dist/${IPA_FINAL_NAME}.meta.txt"
   echo "Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
   echo "Release Tag:          ${RELEASE_TAG}"
   echo "Build Version (build): ${BUILD_VERSION}"
-  echo "CFBundleShortVersionString: 8.${BUILD_VERSION}.0"
+  echo "CFBundleShortVersionString: ${DISPLAY_VERSION}"
   echo "CFBundleVersion:      ${BUILD_VERSION}"
   echo "Mindustry Commit:     $(cd "$BUILD_DIR/Mindustry" && git rev-parse HEAD)"
   echo "Arc Commit:           $(cd "$BUILD_DIR/Arc" && git rev-parse HEAD)"
@@ -197,4 +246,4 @@ echo "IPA_OUTPUT=${IPA_FINAL}"
 echo "IPA_META=${META}"
 echo "RELEASE_TAG=${RELEASE_TAG}"
 echo "BUILD_VERSION=${BUILD_VERSION}"
-echo "DISPLAY_VERSION=8.${BUILD_VERSION}.0"
+echo "DISPLAY_VERSION=${DISPLAY_VERSION}"

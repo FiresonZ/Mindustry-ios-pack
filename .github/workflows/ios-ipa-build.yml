@@ -101,8 +101,10 @@ jobs:
           MANUAL="${{ github.event.inputs.build_version }}"
           FORCE="${{ github.event.inputs.force_build }}"
           AUTO_NEEDS="${{ env.NEEDS_BUILD }}"
+          AUTO_DISPLAY="${{ env.DISPLAY_VERSION }}"
           TAG=""
           BUILD=""
+          DISPLAY=""
           REASON=""
           NEEDS="false"
 
@@ -140,7 +142,19 @@ jobs:
             fi
           fi
 
-          DISPLAY="8.${BUILD}.0"
+          # ========== 计算显示版本（兼容整数 v146 & 小数 v159.7） ==========
+          # 自动检测路径：优先使用 check-version.sh 输出的 DISPLAY_VERSION
+          # 手动指定或兜底：按规则自行推导 3 段式 CFBundleShortVersionString
+          if [ -n "$AUTO_DISPLAY" ] && [ -z "$MANUAL" ]; then
+            DISPLAY="$AUTO_DISPLAY"
+          else
+            if [[ "$BUILD" == *.* ]]; then
+              DISPLAY="8.${BUILD}"        # 如 159.7 -> 8.159.7
+            else
+              DISPLAY="8.${BUILD}.0"      # 如 146  -> 8.146.0
+            fi
+          fi
+
           echo "needs_build=$NEEDS"    >> "$GITHUB_OUTPUT"
           echo "release_tag=$TAG"      >> "$GITHUB_OUTPUT"
           echo "build_version=$BUILD"  >> "$GITHUB_OUTPUT"
