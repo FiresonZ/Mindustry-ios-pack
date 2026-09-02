@@ -493,6 +493,108 @@ GRADLE_ARGS=(
 # 固定未签名模式：不再向 Gradle 传入 signIdentity / provisioningProfile 参数
 echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >&2
 
+  # ===== (C.0) RoboVM 配置修正：确保 robovm.xml 对 libs/libarc-freetype.a 的相对路径更稳 =====
+  # Anuken/Mindustry v159.7 的 robovm.xml 写：
+  #   <libs>
+  #     <lib>libs/libarc-freetype.a</lib>
+  #   </libs>
+  # RoboVM 会把 <lib> 解析成 -force_load <基于 RoboVM 工作目录的绝对路径>。
+  # 当上游 Mindustry/ios/libs 在 CI 上没有 Arc/natives/natives-freetype-ios/libs 拷过去的
+  # .a 时，路径就不存在 → ld: library '…/libarc-freetype.a' not found。
+  # 修：(a) 把 <lib value> 改成带 variant 的形式，避免变体目录选择时路径飘；(b) 在 <libs>
+  # 中补一条 fallback，指向同一目录下的备用文件名；(c) 最后兜底：若 Mindustry/ios/libs
+  # 在 copyNatives 结束后仍为空，则继续用 C.1 壳侧把文件补齐。
+  IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
+  if [ -f "$IOS_ROBOVM_XML" ]; then
+    perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
+      use strict; use warnings;
+      # 1) 为现有 <lib>libs/libarc-freetype.a</lib> 元素加几个保险属性，
+      #    并把它相对路径保留，但在同 <libs> 内追加备用的 <lib> 条目，
+      #    确保 "Mindustry/ios/libs/libarc-freetype.a" 最终可被 linker 找到。
+      if (s{(<lib>\s*libs/libarc-freetype\.a\s*</lib>)}{
+        my $orig = $1;
+        $orig . "\n    " . '<lib>libs/libarc-freetype.a</lib>'
+             . "\n    " . '<lib variant="release">libs/libarc-freetype.a</lib>'
+             . "\n    " . '<lib variant="debug">libs/libarc-freetype.a</lib>';
+      }sge) {
+        # 处理去重：保留顺序，但避免完全相同的 <lib> 条目反复叠加
+        my %seen; my @lines = split(/\n/, $_);
+        @lines = grep {
+          my $raw = $_; $raw =~ s/\s+//g;
+          if ($raw =~ m{^<lib>libs/libarc-freetype\.a</lib>$} and $seen{"plain"}++) { 0 }
+          elsif ($raw =~ m{^<libvariant="release">libs/libarc-freetype\.a</lib>$} and $seen{"release"}++) { 0 }
+          elsif ($raw =~ m{^<libvariant="debug">libs/libarc-freetype\.a</lib>$} and $seen{"debug"}++) { 0 }
+          else { 1 }
+        } @lines;
+        $_ = join("\n", @lines);
+      }
+
+      # 2) 在 <frameworkPaths>（若已有）中追加 Mindustry/ios/libs 的相对目录，
+      #    避免 v159.7 原有的 backend-robovm META-INF cache 路径是唯一 frameworkPath 时
+      #    找不到 ios/libs 作为 framework/lib 搜索基准。
+      s{(<frameworkPaths>(?:[\s\S]*?)</frameworkPaths>)}{
+        my $block = $1;
+        my $tag = qq{<path>libs</path>};
+        if (index($block, $tag) < 0) {
+          $block =~ s{</frameworkPaths>}{  $tag\n  </frameworkPaths>};
+        }
+        $block;
+      }sge;
+
+      # 3) 如果文件完全没有 <frameworkPaths>，就在 </config> 或 </robovm> 之前兜底插入
+      if (!m{<frameworkPaths>}) {
+        s{(</(?:config|robovm)>)}
+         {  <frameworkPaths>\n    <path>libs</path>\n  </frameworkPaths>\n$1}s;
+      }
+__BUILD_IPA_PATCH_ROBOVM_XML__
+    echo "    (A.3) robovm.xml 已附加 freetype .a 变体与 <frameworkPaths><path>libs</path></frameworkPaths> 兜底" >&2
+  fi
+
+  # ===== (C.0 2/2) 优先从依赖 jar 解 freetype 静态库（不再依赖 Arc 原生任务成功） =====
+  # 说明：C.1 中调用的 :Arc:natives:natives-freetype-ios:build / jar 任务有时会因为缺少
+  # RoboVM 原生构建工具链而“成功但不产出 .a”，此时上游依赖（arcModule "natives:natives-freetype-ios"）
+  # 实际会把一个完整的 natives-freetype-ios-*.jar 拉到 ~/.gradle/caches/modules-2 或
+  # Arc/natives/natives-freetype-ios/build/libs 下面，jar 里有 META-INF/robovm/ios/libs/libarc-freetype.a
+  # 只要把它解出来，再 cp 到 Mindustry/ios/libs，RoboVM 的 -force_load 绝对路径就能命中。
+  # 这里先在 [4/7] 之前做一次“早注入”，确保 copyNatives→copyAssets→:ios:createIPA 时
+  # Mindustry/ios/libs/libarc-freetype.a 已经存在（即便是后续 copy{} 覆盖成无符号的版本也没关系）。
+  IOS_LIBS_DIR_EARLY="${BUILD_DIR}/Mindustry/ios/libs"
+  mkdir -p "$IOS_LIBS_DIR_EARLY"
+  # 候选 jar 路径：.gradle 缓存、build 输出、.m2、~/.robovm
+  JAR_SEARCH_DIRS=(
+    "$HOME/.gradle/caches/modules-2/files-2.1"
+    "${BUILD_DIR}/Arc/natives/natives-freetype-ios/build/libs"
+    "${BUILD_DIR}/Arc/natives/natives-ios/build/libs"
+    "${BUILD_DIR}/Arc/backends/backend-robovm/build/libs"
+    "$HOME/.m2/repository"
+    "$HOME/.robovm"
+  )
+  echo "    (C.0) 前置搜索 natives-freetype-ios jar，META-INF/robovm/ios/libs 提取 libarc-freetype.a：" >&2
+  FOUND_EARLY=0
+  for D in "${JAR_SEARCH_DIRS[@]}"; do
+    [ -d "$D" ] || continue
+    JARLIST=$(find "$D" -name '*natives-freetype-ios*.jar' -type f 2>/dev/null || true)
+    [ -z "$JARLIST" ] && continue
+    TMP_E=$(mktemp -d)
+    for J in $JARLIST; do
+      if unzip -l "$J" 2>/dev/null | grep -q 'META-INF/robovm/ios/libs/libarc-freetype\.a'; then
+        unzip -o -q -j -d "$TMP_E" "$J" 'META-INF/robovm/ios/libs/libarc-freetype.a' >/dev/null 2>&1 || true
+        if [ -f "$TMP_E/libarc-freetype.a" ] && [ ! -f "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
+          cp -f "$TMP_E/libarc-freetype.a" "$IOS_LIBS_DIR_EARLY/libarc-freetype.a"
+          echo "      ✓ 从 $J 解出 .a 并拷贝到 ios/libs" >&2
+          FOUND_EARLY=1
+          break 2
+        fi
+      fi
+    done
+    rm -rf "$TMP_E"
+  done
+  if [ "$FOUND_EARLY" -eq 0 ]; then
+    echo "      ℹ jar 缓存搜索暂未命中（将在 C.1 阶段再兜底 Arc 原生构建 & 生成占位）" >&2
+  fi
+  echo "      前置检查 ios/libs 结果：" >&2
+  ls -la "$IOS_LIBS_DIR_EARLY" >&2 || true
+
 # ========= 初始化 robovm.properties（确保 CFBundleShortVersionString 一致） =========
 echo "==> [4/7] 初始化 ios/robovm.properties（版本严格同步 ${DISPLAY_VERSION}）" >&2
 ROBOVM_PROPS="${BUILD_DIR}/Mindustry/ios/robovm.properties"
@@ -632,6 +734,48 @@ else
 fi
 
 ./gradlew "${GRADLE_ARGS[@]}" :ios:createIPA
+GRADLE_RC=$?
+
+# ========= 若 createIPA 失败：抽取 RoboVM 链接阶段 clang stderr 到日志 =========
+# 过去多次失败时 tail -150 build-ipa.log 只剩下 RoboVMGradleException 的上层 stack，
+# 真实的 ld/clang 错误（Undefined symbols / wrong architecture / file format invalid /
+# library not found 等）只被写入 ios/build/robovm.tmp 下的 *stderr 或 AbstractTarget
+# 在 ToolchainUtil.link 里捕获的 stderr。这里尝试从几处常见位置 dump，确保下次 CI 失败
+# 时日志直接包含真实错误行，而不是只有空的 “exit value: 1”。
+if [ "$GRADLE_RC" -ne 0 ]; then
+  echo "===== :ios:createIPA 失败 ($GRADLE_RC)，转储 RoboVM 链接诊断 =====" >&2
+  TMP_ROBOVM="${BUILD_DIR}/Mindustry/ios/build/robovm.tmp"
+  if [ -d "$TMP_ROBOVM" ]; then
+    echo "--- robovm.tmp 目录结构 ---" >&2
+    find "$TMP_ROBOVM" -maxdepth 3 -type f | sort | head -80 >&2 || true
+    for F in "$TMP_ROBOVM/stderr" "$TMP_ROBOVM/clang_stderr" "$TMP_ROBOVM/link_stderr" \
+             "$TMP_ROBOVM/robovm-link-stderr.log" "$TMP_ROBOVM/clang.err" \
+             "$TMP_ROBOVM/IOSLauncher.link.stderr"; do
+      [ -f "$F" ] || continue
+      echo "--- $F ---" >&2
+      tail -100 "$F" >&2
+    done
+    # objects0 / filelist + all .err/.stderr files as generic catch-all
+    find "$TMP_ROBOVM" -type f \( -name '*.stderr' -o -name '*.err' -o -name '*stderr*' -o -name 'objects*' \) 2>/dev/null | while read -r X; do
+      if [[ "$X" == *objects* ]]; then
+        echo "--- (filelist sample) $X (first 30 lines) ---" >&2
+        head -30 "$X" >&2 || true
+      else
+        echo "--- $X ---" >&2
+        tail -80 "$X" >&2
+      fi
+    done
+  else
+    echo "(robovm.tmp 不存在 —— 失败发生在链接前的配置/打包阶段)" >&2
+  fi
+  # 同时搜索 ios/build 下 *.log 中含 error/ld/undef/library/not found 的行
+  echo "--- ios/build/** 日志中含 error|library|Undefined|clang++ 的最后 100 行 ---" >&2
+  find "${BUILD_DIR}/Mindustry/ios/build" -type f \( -name '*.log' -o -name '*.txt' -o -name '*.out' \) 2>/dev/null \
+    | xargs -I{} grep -niHE 'error|library.*not found|Undefined symbols|file.*is not an object file|Unsupported architecture|clang' {} 2>/dev/null \
+    | tail -100 >&2 || true
+  echo "===== 诊断结束 =====" >&2
+fi
+[ "$GRADLE_RC" -ne 0 ] && exit "$GRADLE_RC"
 
 # ========= 查找产物 =========
 IPA_FILE=$(find "$BUILD_DIR/Mindustry/ios/build" -name "*.ipa" -type f | head -1 || true)
