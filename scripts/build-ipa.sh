@@ -314,11 +314,43 @@ def _stripDec_bv(Object v) {
     }gixe) {}
   ' "$IOS_GRADLE"
 
-  PATCHED_COUNT=$(grep -c 'replaceAll' "$IOS_GRADLE" 2>/dev/null || echo 0)
-  echo "    (B.2) 小数版本兼容：成功注入 ${PATCHED_COUNT} 处 replaceAll 保护" >&2
+  # ---- (B.3) 覆盖写保护：incrementConfig 会执行 props['app.build'] = 读取值.toInteger() + 1，
+  # 即使 toInteger 不再崩溃（B.2 replaceAll 去小数），+1 也会把 159 → 160、把 "159.7" 的小数部分丢掉。
+  # 因此在写盘（props.store）前一刻强制令 props["app.build"] = 精确传入的 bversion (如 "159.7")，
+  # 完全绕过自增逻辑。与 app.version 写法保持一致，使用相同的 "custom build" 守卫。
+  perl -0777 -pi -e '
+    my $guard = qq{
+    // === build-ipa.sh 注入：CI 强制锁定 CFBundleVersion，无视 incrementConfig 自增 +1 ===
+    if(bversion != "custom build"){ props["app.build"] = bversion.toString() }
+    // === 覆盖结束 ===};
+    s/(props\.store\(\s*vfile\.newWriter\(\)\s*,\s*null\s*\))/$guard\n    $1/s;
+  ' "$IOS_GRADLE"
+
+  # PATCHED_COUNT：统计**实际代码**中 replaceAll 出现次数（排除纯注释行，避免 B.1 注释 / 覆盖块注释放大计数）
+  PATCHED_COUNT=$(grep -vE '^\s*//' "$IOS_GRADLE" 2>/dev/null | grep -c 'replaceAll' || echo 0)
+  echo "    (B.2+B.3) 小数版本兼容：注入 ${PATCHED_COUNT} 处 replaceAll 保护 + 1 处 app.build 覆盖写锁定" >&2
   if [ "$PATCHED_COUNT" -eq 0 ]; then
     echo "    !! WARN: 未能命中任何已知整数转换模式！请人工核对上游 ios/build.gradle 的新版本写法。" >&2
     echo "    完整 ios/build.gradle 诊断（前 80 行）：" >&2
+    sed -n '1,80p' "$IOS_GRADLE" >&2 || true
+  fi
+  # ---- (B.4) 最终守护：扫描所有 .toInteger()/.toLong()/… 行，若存在没被 replaceAll 保护的则发出显式告警 ----
+  echo "    (B.4) 最终守护：检查仍未受保护的整数转换（应为 0 行）：" >&2
+  UNPROTECTED=$(grep -nE '\.(toInteger|toLong|toBigInteger)\(' "$IOS_GRADLE" 2>/dev/null \
+    | grep -vE 'replaceAll.*\.(toInteger|toLong|toBigInteger)\(' || true)
+  # 注意：grep -c 在 count=0 时仍输出 "0" 但退出码为 1，不能加 || echo 0（会变成 0<newline>0 双行）
+  if [ -z "$UNPROTECTED" ]; then
+    UNPROTECTED_COUNT=0
+  else
+    UNPROTECTED_COUNT=$(printf '%s\n' "$UNPROTECTED" | grep -c '.' || true)
+    [ -z "$UNPROTECTED_COUNT" ] && UNPROTECTED_COUNT=0
+  fi
+  if [ "$UNPROTECTED_COUNT" -eq 0 ]; then
+    echo "      ✓ 所有整数转换均已被 replaceAll 保护 (0 行未保护)" >&2
+  else
+    echo "      ✗ 仍有 ${UNPROTECTED_COUNT} 行整数转换未受保护！" >&2
+    echo "$UNPROTECTED" >&2
+    echo "    完整 ios/build.gradle（前 80 行）供人工排查：" >&2
     sed -n '1,80p' "$IOS_GRADLE" >&2 || true
   fi
   # 关键行诊断：打印第 1~60 行，便于 CI 日志确认补丁位置（包含顶部注入 + 原 L20~40）
