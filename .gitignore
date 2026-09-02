@@ -10,7 +10,7 @@ dist/
 # ==== Build logs ====
 *.log
 
-# ==== macOS signing artifacts (local) ====
+# ==== macOS signing artifacts (留档以防以后恢复签名流程) ====
 *.p12
 *.mobileprovision
 *.cer

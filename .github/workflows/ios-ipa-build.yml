@@ -1,7 +1,7 @@
-name: Mindustry iOS IPA Auto Build
+name: Mindustry iOS IPA Auto Build (Unsigned / TrollStore)
 
 # ============================================================
-# 自动检测 + 打包 Mindustry iOS IPA
+# 自动检测 + 打包 Mindustry iOS IPA（未签名版，TrollStore 安装）
 # ============================================================
 # 触发方式：
 #   1. schedule: 每 6 小时检测 Anuken/Mindustry 最新 release
@@ -12,14 +12,11 @@ name: Mindustry iOS IPA Auto Build
 #   CFBundleVersion            = <BUILD_VERSION>
 #   源码 tag                   = v<BUILD_VERSION>
 #
-# 必须的 Repository Secrets（真机签名）：
-#   IOS_CERT_BASE64           .p12 证书文件 base64
-#   IOS_CERT_PASSWORD         .p12 解压密码
-#   IOS_PROV_PROFILE_BASE64   .mobileprovision 文件 base64
-#   IOS_PROV_PROFILE_UUID     Provisioning Profile UUID
-#   IOS_SIGN_IDENTITY         签名身份（"Apple Development: Name (TEAMID)"）
-#   IOS_PROV_PROFILE_NAME     Provisioning Profile 名称
-#   PAT_GITHUB                （可选）Personal Access Token，用于回写 LAST_VERSION
+# Repository Secrets（可选）：
+#   PAT_GITHUB  Personal Access Token，用于 schedule 成功后自动回写 LAST_VERSION
+#
+# 说明：本工作流默认生成 **未签名 IPA**，无需 Apple 开发者账号 / 证书 / 描述文件。
+#       使用 TrollStore（或 AltStore / Sideloadly 等）对 IPA 进行自签安装即可运行。
 # ============================================================
 
 on:
@@ -34,11 +31,6 @@ on:
         default: ''
       force_build:
         description: '强制构建（即使版本号未变化）'
-        required: false
-        type: boolean
-        default: false
-      skip_signing:
-        description: '跳过签名（生成未签名 IPA，无法直接安装到真机）'
         required: false
         type: boolean
         default: false
@@ -186,7 +178,7 @@ jobs:
           echo "Reason           : ${{ needs.check-version.outputs.reason }}"
           echo "macOS Version    : $(sw_vers -productVersion)"
           echo "Xcode Version    : $(xcodebuild -version | head -1)"
-          echo "Skip Signing?    : ${{ github.event.inputs.skip_signing }}"
+          echo "Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)"
 
       - name: Setup JDK 17 (Temurin)
         uses: actions/setup-java@v5
@@ -204,17 +196,13 @@ jobs:
           cache-read-only: false
           gradle-home-cache-cleanup: true
 
-      - name: Run build-ipa.sh
+      - name: Run build-ipa.sh (unsigned)
         id: build
         shell: bash
         env:
-          BUILD_VERSION:           ${{ needs.check-version.outputs.build_version }}
-          SKIP_SIGNING:            ${{ github.event.inputs.skip_signing == true && 'true' || 'false' }}
-          IOS_SIGN_IDENTITY:       ${{ secrets.IOS_SIGN_IDENTITY }}
-          IOS_PROV_PROFILE_NAME:   ${{ secrets.IOS_PROV_PROFILE_NAME }}
-          IOS_PROV_PROFILE_UUID:   ${{ secrets.IOS_PROV_PROFILE_UUID }}
-          IOS_CERT_BASE64:         ${{ secrets.IOS_CERT_BASE64 }}
-          IOS_CERT_PASSWORD:       ${{ secrets.IOS_CERT_PASSWORD }}
+          BUILD_VERSION: ${{ needs.check-version.outputs.build_version }}
+          # 固定未签名：无需 Apple 开发者证书 / 描述文件，产物通过 TrollStore 等工具安装
+          SKIP_SIGNING:  'true'
         run: |
           chmod +x ./scripts/build-ipa.sh
           set -o pipefail
@@ -265,8 +253,9 @@ jobs:
             | CFBundleVersion | `${{ needs.check-version.outputs.build_version }}` |
             | Upstream Commit URL | https://github.com/Anuken/Mindustry/tree/${{ needs.check-version.outputs.release_tag }} |
 
-            > **注意**：请根据是否签名决定能否直接安装。
-            > 未签名 IPA 需要自签或通过 AltStore / TrollStore 等方式安装。
+            > **安装方式**：本 IPA 为**未签名**版本，需通过以下方式之一安装到真机：
+            > - **TrollStore（推荐）**：直接在 TrollStore 中打开 IPA 安装即可，无需再签名
+            > - **AltStore / Sideloadly**：侧载自签安装（7 天证书限制，付费开发者可一年）
           files: |
             dist/*.ipa
             dist/*.meta.txt
