@@ -117,31 +117,190 @@ if [ -f "$IOS_GRADLE" ]; then
   echo "    (A) 已设置 iosSkipSigning=true" >&2
 
   # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
-  #     上游 ios/build.gradle 第 28 行附近：buildversion.toInteger() 或 Integer.parseInt(buildversion)
-  #     对于输入 "159.7" → 直接报 NumberFormatException
-  #     注入 replaceAll("\\..*","") 去掉小数部分后再转 int，兼容整数 & 小数：
-  #       buildversion.toInteger()
-  #         => buildversion.replaceAll("\\..*","").toInteger()
-  #       Integer.parseInt(buildversion)
-  #         => Integer.parseInt(buildversion.replaceAll("\\..*",""))
-  #     注：Groovy/Java 字符串字面量里 "\\.." 才表示正则的 literal dot \..
-  #         因此目标文件需写双反斜杠；下面用 perl 跨平台（macOS / Linux 行为一致）完成替换
-  BEFORE_COUNT=$(grep -cE '\.toInteger\(\)|Integer\.parseInt\(' "$IOS_GRADLE" 2>/dev/null || echo 0)
-  if [ "$BEFORE_COUNT" -gt 0 ]; then
-    # perl -0pi 跨平台一致 in-place edit，shell 单引号内 \\\\ 交给 perl s/// 后变成 2 个反斜杠
+  #     上游 ios/build.gradle 在配置阶段把 buildversion（传入 "159.7"）当整数解析时抛异常。
+  #     策略：
+  #       1. 先在文件顶部注入安全辅助方法 _stripDec(ver)，供任何表达式调用。
+  #       2. 枚举 Groovy/Gradle 中所有常见的字符串→整数转换写法，统一在 buildversion 表达式
+  #          与转换操作之间插入 .replaceAll("\\..*","") 去小数保护。
+  #
+  #     覆盖的模式（EXPR = buildversion / project.buildversion / "$buildversion" / 等）：
+  #       A. 方法调用：  EXPR.toInteger() | EXPR.toLong() | EXPR.toBigInteger()
+  #       B. Groovy 强转：EXPR as int | EXPR as Integer | EXPR as long | EXPR as Long | EXPR as BigInteger
+  #       C. (Type) 强转：(int)EXPR | (Integer) EXPR | (long) EXPR | (Long) EXPR
+  #       D. 静态方法：  Integer.parseInt(EXPR) | Integer.valueOf(EXPR)
+  #                      Long.parseLong(EXPR)  | Long.valueOf(EXPR)
+  #                      且支持 Groovy 字符串插值：Integer.parseInt("$buildversion")
+  #
+  #     注：Groovy/Java 字符串字面量里 "\\.." 才表示正则 literal dot \.，
+  #         所以目标文件中需写双反斜杠。使用 perl 以保证 macOS/Linux 行为一致。
+
+  # ---- (B.0) 辅助：把所有出现的候选整数转换位置先打印诊断 ----
+  echo "    (B.0) 扫描整数转换候选点（构建失败时请核对是否有遗漏模式）：" >&2
+  grep -nE '\.(toInteger|toLong|toBigInteger)\(|as\s+(int|Integer|long|Long|BigInteger)(\s|$)|\(int\)|\(Integer\)|\(long\)|\(Long\)|Integer\.(parseInt|valueOf)\(|Long\.(parseLong|valueOf)\(' "$IOS_GRADLE" 2>/dev/null | head -40 >&2 || echo "      （未命中任何已知整数转换模式）" >&2
+
+  # ---- (B.1) 在文件非常靠前的位置注入 _stripDec 工具函数 ----
+  # 在第 1 个非空非注释非插件声明行之前注入；若找不到合适位置就硬塞到第 1 行后。
+  INJECT_MARKER="// === 小数版本号兼容补丁 (由 build-ipa.sh 注入) ==="
+  if ! grep -qF "$INJECT_MARKER" "$IOS_GRADLE" 2>/dev/null; then
+    # 用 perl 插入：跳过文件开头的 buildscript{} / plugins{} / import / apply plugin 行，
+    # 在这些之后找到第一处"普通代码行"前插入补丁。找不到插入点时直接塞到第 2 行。
     perl -0pi -e '
-      s/\b(buildversion)\.toInteger\(\)/$1.replaceAll("\\\\..*","").toInteger()/g;
-      s/Integer\.parseInt\((buildversion)\)/Integer.parseInt($1.replaceAll("\\\\..*",""))/g;
+      my $patch = qq{
+'$INJECT_MARKER'
+// 把 "159.7" 之类带小数的构建号裁剪成整数部分 "159"，避免 toInteger/parseInt 抛 NumberFormatException。
+// 所有需要把构建号当整数使用的地方，都用 _stripDec(xxx) 包一层，或直接在变量后接 .replaceAll("\\\\..*","")
+def _stripDec_bv(Object v) {
+    if (v == null) return "0";
+    String s = v.toString();
+    int dot = s.indexOf((char)46);
+    return (dot >= 0) ? s.substring(0, dot) : s;
+}
+// === 兼容补丁结束 ===
+};
+      # 策略：如果存在 plugins { ... } 或 buildscript { ... } 块，把补丁插到该块之后的第一个空行之后。
+      if (s/((?:^|\n)(?:plugins|buildscript)\s*\{(?:[^{}]++|\{(?:[^{}]++|\{[^{}]*\})*\})*\})/$1\n$patch/s) {
+        # 已成功插到 plugins/buildscript 之后
+      } else {
+        # 退化：直接插到第 1 行结尾（即第 2 行位置）
+        s/\n/\n$patch/;
+      }
     ' "$IOS_GRADLE"
-    PATCHED_COUNT=$(grep -c 'replaceAll' "$IOS_GRADLE" 2>/dev/null || echo 0)
-    echo "    (B) 小数版本兼容：发现 ${BEFORE_COUNT} 处整数解析 → 成功注入 ${PATCHED_COUNT} 处 replaceAll 保护" >&2
-    # 关键行诊断：打印第 20~40 行，便于 CI 日志确认补丁位置
-    echo "    --- ios/build.gradle L20~40 (诊断) ---" >&2
-    sed -n '20,40p' "$IOS_GRADLE" >&2 || true
-    echo "    -------------------------------------" >&2
-  else
-    echo "    (B) 未发现 .toInteger()/Integer.parseInt，跳过小数兼容补丁" >&2
+    echo "    (B.1) 已在 ios/build.gradle 顶部注入 _stripDec_bv 辅助函数" >&2
   fi
+
+  # ---- (B.2) 用 perl 对多种模式统一打补丁（仅针对 buildversion 相关表达式）----
+  # 使用 perl -0777 (slurp) + 多轮 s///ge；每轮在替换代码块中判断捕获的表达式
+  # 是否确实引用了 buildversion（含 property("buildversion") 这种字符串索引形式），
+  # 只有命中的才加 .replaceAll("\\..*","") 去小数保护，避免误伤其他整数转换。
+  perl -0777 -pi -e '
+    # 判断表达式是否引用了 buildversion（裸词 / 属性链 / 字符串键 / GString 内）
+    sub is_bv_expr {
+      my ($s) = @_;
+      return ($s =~ /\bbuildversion\b/i                  # 裸词或链中出现
+           || $s =~ /["'"'"']buildversion["'"'"']/i);    # 字符串键：["buildversion"] / getProperty("buildversion")
+    }
+
+    sub wrap_bv {
+      my ($expr) = @_;
+      return $expr if $expr =~ /replaceAll/;               # 已经有补丁，跳过
+      if ($expr =~ /"\s*$/) {
+        # 字面字符串 / GString 结尾: 需要 .toString() 再 replaceAll
+        return $expr . '.toString().replaceAll("\\\\..*","")';
+      }
+      return $expr . '.replaceAll("\\\\..*","")';
+    }
+
+    # ---------- Group A: EXPR.toInteger() / .toLong() / .toBigInteger() ----------
+    # 仅当 EXPR 是 buildversion（或带前缀 project.buildversion / project["buildversion"] 等）时改
+    while (s{
+        (?<!replaceAll\(")
+        (
+          (?:\b[A-Za-z_][\w]*\.)*                        # 可选 project. / properties. / ext. / rootProject.
+          buildversion                                    # 必须出现 buildversion 关键字
+          (?:\[[^\]]*\])?                                 # 可选下标（但 buildversion 本身是属性，这里只保留下标写法兜底）
+          (?:\.toString\(\))?                             # 可选显式 toString()
+        )\.(toInteger|toLong|toBigInteger)\(\)
+    }{
+      my ($e, $m) = ($1, $2);
+      is_bv_expr($e) ? (wrap_bv($e) . ".$m()") : "$e.$m()";
+    }gixe) {}
+
+    # ---------- Group B: "$buildversion".toInteger() 或 "${buildversion}".toInteger() ----------
+    # GString 结尾加 .toInteger 等；变量名必须是 buildversion（或属性链带 buildversion）
+    while (s{
+        ("\$(?:\{((?:[A-Za-z_][\w]*\.)*buildversion(?:\[[^\]]*\])?)\}|((?:[A-Za-z_][\w]*\.)*buildversion))")
+        \.(toInteger|toLong|toBigInteger)\(\)
+    }{
+      my ($before, $m) = ($1, $+);
+      my $whole = $1;  # 整个 GString 字面量 "$buildversion" / "${buildversion}"
+      # $+ 是最后一个捕获（toInteger/...），我们要捕获变量部分则看 $2 $3
+      my $var_in_gstring = $2 || $3 || "";
+      if (is_bv_expr($var_in_gstring)) {
+        wrap_bv($whole) . ".$m()"
+      } else {
+        "$whole.$m()"
+      }
+    }gixe) {}
+    # 注：上面 Group B 捕获里 $4 会是方法名；重写更清晰版本（把方法名放入 $4）：
+    # 由于上一轮的 while 匹配里捕获分组写得有点乱，这里补一个更清晰的替代正则跑第二遍：
+    while (s{
+        ("\$(?:\{((?:[A-Za-z_][\w]*\.)*buildversion)\}|((?:[A-Za-z_][\w]*\.)*buildversion))")  # $1=whole, $2=$3=inner var
+        \.(toInteger|toLong|toBigInteger)\(\)                                                    # $4=method
+    }{
+      my ($whole, $inner, $inner2, $meth) = ($1, $2, $3, $4);
+      my $var = $inner || $inner2;
+      ($var && is_bv_expr($var)) ? (wrap_bv($whole) . ".$meth()") : "$whole.$meth()";
+    }gixe) {}
+
+    # ---------- Group C: Integer.parseInt(EXPR) / Integer.valueOf / Long.parseLong / Long.valueOf ----------
+    # 只改 EXPR 中含 buildversion 的那些调用（支持 GString、project.getProperty()、下标）
+    while (s{
+        (Integer|Long)\.(parseInt|parseLong|valueOf)\(
+            \s*
+            (
+                # Case 1: 裸词或属性链 + 可选 .toString()
+                (?:[A-Za-z_][\w]*\.)*buildversion(?:\.toString\(\))?
+                |
+                # Case 2: GString 字面量 "$buildversion" 或 "${xxx.buildversion}"
+                "\$(?:\{(?:[A-Za-z_][\w]*\.)*buildversion\}|(?:[A-Za-z_][\w]*\.)*buildversion)"
+                (?:\.toString\(\))?
+                |
+                # Case 3: project.getProperty("buildversion") / property("buildversion")
+                [A-Za-z_][\w]*\.(?:getProperty|property)\(\s*["'"'"']buildversion["'"'"']\s*\)
+                (?:\.toString\(\))?
+                |
+                # Case 4: project["buildversion"] / project['"'"'buildversion'"'"']
+                [A-Za-z_][\w]*\[\s*["'"'"']buildversion["'"'"']\s*\]
+                (?:\.toString\(\))?
+            )
+            \s*
+        \)
+    }{
+      my ($cls, $mth, $arg) = ($1, $2, $3);
+      is_bv_expr($arg) ? ("$cls.$mth(" . wrap_bv($arg) . ")") : "$cls.$mth($arg)";
+    }gixe) {}
+
+    # ---------- Group D: `EXPR as int` / `as Integer` / `as long` / `as Long` / `as BigInteger` ----------
+    while (s{
+        (?<!replaceAll\(")
+        (
+          (?:[A-Za-z_][\w]*\.)*                        # 可选前缀
+          buildversion
+          (?:\[[^\]]*\])?                               # 可选下标
+          (?:\.toString\(\))?                           # 可选 .toString()
+        )
+        (\s+as\s+(?:int|Integer|long|Long|BigInteger)\b)
+    }{
+      my ($e, $cast) = ($1, $2);
+      is_bv_expr($e) ? (wrap_bv($e) . $cast) : "$e$cast";
+    }gixe) {}
+
+    # ---------- Group E: `(int) EXPR` / `(Integer) EXPR` / `(long) EXPR` / `(Long) EXPR` ----------
+    while (s{
+        (\(\s*(?:int|Integer|long|Long)\s*\))
+        \s+
+        (
+          (?:[A-Za-z_][\w]*\.)*buildversion
+          (?:\[[^\]]*\])?
+          (?:\.toString\(\))?
+        )
+    }{
+      my ($cast, $e) = ($1, $2);
+      is_bv_expr($e) ? ("$cast " . wrap_bv($e)) : "$cast $e";
+    }gixe) {}
+  ' "$IOS_GRADLE"
+
+  PATCHED_COUNT=$(grep -c 'replaceAll' "$IOS_GRADLE" 2>/dev/null || echo 0)
+  echo "    (B.2) 小数版本兼容：成功注入 ${PATCHED_COUNT} 处 replaceAll 保护" >&2
+  if [ "$PATCHED_COUNT" -eq 0 ]; then
+    echo "    !! WARN: 未能命中任何已知整数转换模式！请人工核对上游 ios/build.gradle 的新版本写法。" >&2
+    echo "    完整 ios/build.gradle 诊断（前 80 行）：" >&2
+    sed -n '1,80p' "$IOS_GRADLE" >&2 || true
+  fi
+  # 关键行诊断：打印第 1~60 行，便于 CI 日志确认补丁位置（包含顶部注入 + 原 L20~40）
+  echo "    --- ios/build.gradle L1~60 (诊断) ---" >&2
+  sed -n '1,60p' "$IOS_GRADLE" >&2 || true
+  echo "    ------------------------------------" >&2
 else
   echo "WARN: 未找到 ios/build.gradle，签名与版本兼容补丁将跳过！" >&2
 fi
