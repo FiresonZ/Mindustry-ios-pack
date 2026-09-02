@@ -46,10 +46,21 @@ if [ -z "$RELEASE_TAG" ]; then
   exit 1
 fi
 
-# 提取纯数字构建版本号（去掉前缀 v）
+# 提取构建版本号（去掉前缀 v）
+# 兼容两种 tag 格式：v146 (整数) 与 v159.7 (带小数的补丁版)
 BUILD_VERSION="${RELEASE_TAG#v}"
 
-echo "==> 最新 GitHub Release: ${RELEASE_TAG} (build=${BUILD_VERSION})" >&2
+# 计算整数主版本号（去掉小数部分，供 Gradle 中需要 .toInteger() 的场景兜底）
+BUILD_INT="${BUILD_VERSION%%.*}"
+
+# 根据是否含小数推导 display 版本（3 段式，符合苹果 CFBundleShortVersionString 规范）
+if [[ "$BUILD_VERSION" == *.* ]]; then
+  DISPLAY_VERSION="8.${BUILD_VERSION}"        # 如 159.7 -> 8.159.7
+else
+  DISPLAY_VERSION="8.${BUILD_VERSION}.0"      # 如 146 -> 8.146.0
+fi
+
+echo "==> 最新 GitHub Release: ${RELEASE_TAG} (build=${BUILD_VERSION}, build_int=${BUILD_INT}, display=${DISPLAY_VERSION})" >&2
 
 # 读取上次记录的版本
 LAST_TAG=""
@@ -81,8 +92,8 @@ if d.get('resultCount',0)>0:
 " 2>/dev/null || true)
     if [ -n "$APP_STORE_VERSION" ]; then
       echo "==> App Store 当前显示版本: ${APP_STORE_VERSION}" >&2
-      # 验证版本号匹配规则: AppStore版本格式应为 8.<build>.0
-      EXPECTED_APPVER="8.${BUILD_VERSION}.0"
+      # 验证版本号匹配规则: 应为 DISPLAY_VERSION（小数版 -> 8.159.7，整数版 -> 8.146.0）
+      EXPECTED_APPVER="${DISPLAY_VERSION}"
       if [ "$APP_STORE_VERSION" != "$EXPECTED_APPVER" ]; then
         echo "WARN: App Store版本($APP_STORE_VERSION) 与预期版本($EXPECTED_APPVER)不一致" >&2
       fi
@@ -93,6 +104,8 @@ fi
 # 写入结果到 stdout（供 Actions 读取）
 echo "RELEASE_TAG=${RELEASE_TAG}"
 echo "BUILD_VERSION=${BUILD_VERSION}"
+echo "BUILD_INT=${BUILD_INT}"
+echo "DISPLAY_VERSION=${DISPLAY_VERSION}"
 echo "APP_STORE_VERSION=${APP_STORE_VERSION}"
 echo "NEEDS_BUILD=${NEEDS_BUILD}"
 
