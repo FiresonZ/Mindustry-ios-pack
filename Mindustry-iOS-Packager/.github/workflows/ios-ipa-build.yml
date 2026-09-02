@@ -1,0 +1,314 @@
+name: Mindustry iOS IPA Auto Build
+
+# ============================================================
+# 自动检测 + 打包 Mindustry iOS IPA
+# ============================================================
+# 触发方式：
+#   1. schedule: 每 6 小时检测 Anuken/Mindustry 最新 release
+#   2. workflow_dispatch: 手动运行（可指定 BUILD_VERSION，如 146）
+#
+# 版本号严格规则（与 App Store 保持一致）：
+#   CFBundleShortVersionString = 8.<BUILD_VERSION>.0
+#   CFBundleVersion            = <BUILD_VERSION>
+#   源码 tag                   = v<BUILD_VERSION>
+#
+# 必须的 Repository Secrets（真机签名）：
+#   IOS_CERT_BASE64           .p12 证书文件 base64
+#   IOS_CERT_PASSWORD         .p12 解压密码
+#   IOS_PROV_PROFILE_BASE64   .mobileprovision 文件 base64
+#   IOS_PROV_PROFILE_UUID     Provisioning Profile UUID
+#   IOS_SIGN_IDENTITY         签名身份（"Apple Development: Name (TEAMID)"）
+#   IOS_PROV_PROFILE_NAME     Provisioning Profile 名称
+#   PAT_GITHUB                （可选）Personal Access Token，用于回写 LAST_VERSION
+# ============================================================
+
+on:
+  schedule:
+    # 每 6 小时：UTC 0/6/12/18 点 17 分
+    - cron: '17 0,6,12,18 * * *'
+  workflow_dispatch:
+    inputs:
+      build_version:
+        description: 'Mindustry 构建号（对应 tag v<BUILD_VERSION>，如 146）。留空则自动检测最新版。'
+        required: false
+        default: ''
+      force_build:
+        description: '强制构建（即使版本号未变化）'
+        required: false
+        type: boolean
+        default: false
+      skip_signing:
+        description: '跳过签名（生成未签名 IPA，无法直接安装到真机）'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-ipa-build-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  STATE_FILE: ${{ github.workspace }}/LAST_VERSION
+
+jobs:
+  # =========================================================
+  #  Job 1: 检查版本（Ubuntu，低成本）
+  # =========================================================
+  check-version:
+    name: Check Mindustry Release Version
+    runs-on: ubuntu-22.04
+    outputs:
+      needs_build:   ${{ steps.decide.outputs.needs_build }}
+      release_tag:   ${{ steps.decide.outputs.release_tag }}
+      build_version: ${{ steps.decide.outputs.build_version }}
+      display_ver:   ${{ steps.decide.outputs.display_ver }}
+      reason:        ${{ steps.decide.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v7
+        name: Checkout packager repo
+
+      - name: Restore LAST_VERSION cache (跨 run 状态)
+        uses: actions/cache/restore@v5
+        with:
+          path: LAST_VERSION
+          key: mindustry-ios-last-version
+          restore-keys: |
+            mindustry-ios-last-version
+
+      - name: Run check-version.sh
+        id: check
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x ./scripts/check-version.sh
+          set +e
+          OUT=$(STATE_FILE="${{ env.STATE_FILE }}" ./scripts/check-version.sh)
+          RC=$?
+          echo "$OUT"
+          set -e
+          if [ $RC -ne 0 ]; then
+            echo "check-version.sh failed with exit=$RC"
+            exit $RC
+          fi
+          # 写入 step outputs
+          echo "$OUT" >> "$GITHUB_OUTPUT"
+          # 同时作为 env 供后续使用
+          echo "$OUT" >> "$GITHUB_ENV"
+
+      - name: Decide whether to build
+        id: decide
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+        run: |
+          # 手动指定 build_version
+          MANUAL="${{ github.event.inputs.build_version }}"
+          FORCE="${{ github.event.inputs.force_build }}"
+          AUTO_NEEDS="${{ env.NEEDS_BUILD }}"
+          TAG=""
+          BUILD=""
+          REASON=""
+          NEEDS="false"
+
+          AUTH=()
+          if [ -n "$GITHUB_TOKEN" ]; then
+            AUTH=(-H "Authorization: Bearer $GITHUB_TOKEN")
+          fi
+
+          if [ -n "$MANUAL" ]; then
+            BUILD="$MANUAL"
+            TAG="v${MANUAL}"
+            NEEDS="true"
+            REASON="manual dispatch, build_version=$MANUAL"
+            # 验证 tag 是否真实存在
+            echo "验证 Anuken/Mindustry 是否存在 tag ${TAG} ..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${AUTH[@]}" \
+              "https://api.github.com/repos/Anuken/Mindustry/git/ref/tags/${TAG}")
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "::error:: 未找到 Anuken/Mindustry tag=${TAG} (HTTP $HTTP_CODE)，严格遵循版本号打包失败。"
+              exit 1
+            fi
+            echo "    确认 tag=${TAG} 存在 ✓"
+          else
+            TAG="${{ env.RELEASE_TAG }}"
+            BUILD="${{ env.BUILD_VERSION }}"
+            if [ "$FORCE" = "true" ]; then
+              NEEDS="true"
+              REASON="manual force build"
+            elif [ "$AUTO_NEEDS" = "true" ]; then
+              NEEDS="true"
+              REASON="new release detected (${TAG})"
+            else
+              NEEDS="false"
+              REASON="already at latest (${TAG})"
+            fi
+          fi
+
+          DISPLAY="8.${BUILD}.0"
+          echo "needs_build=$NEEDS"    >> "$GITHUB_OUTPUT"
+          echo "release_tag=$TAG"      >> "$GITHUB_OUTPUT"
+          echo "build_version=$BUILD"  >> "$GITHUB_OUTPUT"
+          echo "display_ver=$DISPLAY"  >> "$GITHUB_OUTPUT"
+          echo "reason=$REASON"        >> "$GITHUB_OUTPUT"
+
+          echo "==============================================="
+          echo " Decision Summary"
+          echo "   Release Tag : $TAG"
+          echo "   Build #     : $BUILD"
+          echo "   Display Ver : $DISPLAY"
+          echo "   Build Now?  : $NEEDS"
+          echo "   Reason      : $REASON"
+          echo "==============================================="
+
+  # =========================================================
+  #  Job 2: 构建 IPA（macOS，必须在 Apple 机器上）
+  # =========================================================
+  build-ipa:
+    name: Build iOS IPA (${{ needs.check-version.outputs.release_tag }})
+    needs: check-version
+    if: needs.check-version.outputs.needs_build == 'true'
+    runs-on: macos-14
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        name: Checkout packager repo
+
+      - name: Echo build parameters
+        shell: bash
+        run: |
+          echo "Release Tag      : ${{ needs.check-version.outputs.release_tag }}"
+          echo "Build Version    : ${{ needs.check-version.outputs.build_version }}"
+          echo "Display Version  : ${{ needs.check-version.outputs.display_ver }}"
+          echo "Reason           : ${{ needs.check-version.outputs.reason }}"
+          echo "macOS Version    : $(sw_vers -productVersion)"
+          echo "Xcode Version    : $(xcodebuild -version | head -1)"
+          echo "Skip Signing?    : ${{ github.event.inputs.skip_signing }}"
+
+      - name: Setup JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Verify Java
+        shell: bash
+        run: java -version
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: false
+          gradle-home-cache-cleanup: true
+
+      - name: Run build-ipa.sh
+        id: build
+        shell: bash
+        env:
+          BUILD_VERSION:           ${{ needs.check-version.outputs.build_version }}
+          SKIP_SIGNING:            ${{ github.event.inputs.skip_signing == true && 'true' || 'false' }}
+          IOS_SIGN_IDENTITY:       ${{ secrets.IOS_SIGN_IDENTITY }}
+          IOS_PROV_PROFILE_NAME:   ${{ secrets.IOS_PROV_PROFILE_NAME }}
+          IOS_PROV_PROFILE_UUID:   ${{ secrets.IOS_PROV_PROFILE_UUID }}
+          IOS_CERT_BASE64:         ${{ secrets.IOS_CERT_BASE64 }}
+          IOS_CERT_PASSWORD:       ${{ secrets.IOS_CERT_PASSWORD }}
+        run: |
+          chmod +x ./scripts/build-ipa.sh
+          set -o pipefail
+          ./scripts/build-ipa.sh 2>&1 | tee build-ipa.log | tail -150
+          # 从脚本最后输出中解析
+          LAST=$(tail -5 build-ipa.log | grep -E '^(IPA_OUTPUT|IPA_META|RELEASE_TAG|BUILD_VERSION|DISPLAY_VERSION)=' || true)
+          echo "$LAST"
+          echo "$LAST" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-log-${{ needs.check-version.outputs.release_tag }}
+          path: build-ipa.log
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Upload IPA as Artifact
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: Mindustry-iOS-${{ needs.check-version.outputs.release_tag }}
+          path: |
+            dist/*.ipa
+            dist/*.meta.txt
+          retention-days: 90
+          compression-level: 6
+          if-no-files-found: error
+
+      # =========================================================
+      #  创建 GitHub Release（仅当非手动 / 非 force）
+      # =========================================================
+      - name: Create GitHub Release
+        if: success() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_build != 'true'))
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-${{ needs.check-version.outputs.release_tag }}
+          name: Mindustry iOS IPA ${{ needs.check-version.outputs.display_ver }} (${{ needs.check-version.outputs.release_tag }})
+          body: |
+            # Mindustry iOS IPA
+
+            | 项目 | 值 |
+            | --- | --- |
+            | Mindustry Release | [${{ needs.check-version.outputs.release_tag }}](https://github.com/Anuken/Mindustry/releases/tag/${{ needs.check-version.outputs.release_tag }}) |
+            | Build Version | `${{ needs.check-version.outputs.build_version }}` |
+            | CFBundleShortVersionString | `${{ needs.check-version.outputs.display_ver }}` |
+            | CFBundleVersion | `${{ needs.check-version.outputs.build_version }}` |
+            | Upstream Commit URL | https://github.com/Anuken/Mindustry/tree/${{ needs.check-version.outputs.release_tag }} |
+
+            > **注意**：请根据是否签名决定能否直接安装。
+            > 未签名 IPA 需要自签或通过 AltStore / TrollStore 等方式安装。
+          files: |
+            dist/*.ipa
+            dist/*.meta.txt
+          fail_on_unmatched_files: true
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+
+      # =========================================================
+      #  更新 LAST_VERSION（写入缓存 + 回写仓库）
+      # =========================================================
+      - name: Update LAST_VERSION state (cache)
+        if: success()
+        shell: bash
+        run: |
+          chmod +x ./scripts/bump-last-version.sh
+          ./scripts/bump-last-version.sh "${{ needs.check-version.outputs.release_tag }}"
+
+      - name: Save LAST_VERSION cache
+        if: success()
+        uses: actions/cache/save@v5
+        with:
+          path: LAST_VERSION
+          key: mindustry-ios-last-version-${{ github.run_id }}
+
+      - name: Commit LAST_VERSION back to repo (if PAT provided)
+        if: success() && github.event_name == 'schedule'
+        shell: bash
+        env:
+          PAT: ${{ secrets.PAT_GITHUB }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "PAT_GITHUB 未设置，跳过 repo 回写（cache 已更新）。"
+            exit 0
+          fi
+          git config user.name  "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain LAST_VERSION 2>/dev/null)" ]; then
+            git add LAST_VERSION
+            git commit -m "chore(version): bump LAST_VERSION to ${{ needs.check-version.outputs.release_tag }}"
+            git push "https://x-access-token:${PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_REF_NAME}
+            echo "已成功回写 LAST_VERSION"
+          else
+            echo "LAST_VERSION 无变化，无需回写。"
+          fi
