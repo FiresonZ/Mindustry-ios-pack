@@ -143,13 +143,18 @@ if [ -f "$IOS_GRADLE" ]; then
       s/(createIPA\.dependsOn\s+build)/$1\ncreateIPA.dependsOn copyNatives/;
     }
 
-    # 2) copyNatives：在原 copy { from "…/libs", "…/libs" 行之后追加额外的 from(…) / include 语句，
-    #    覆盖 Arc 原生构建目录。
-    my $task_start = qq{tasks\\.register\\($SQ copyNatives $SQ \\)};
-    s{$task_start \s*\{ [\s\S]*? copy\s*\{ [\s\S]*? \b from\b \s+ ([^\n]+)}{
-      my $orig = $&;
-      my $extra = qq{\n            // === build-ipa.sh 注入：Arc freetype/ios 静态库搜索范围扩展 ===\n            from("../../Arc/natives/natives-freetype-ios/build/libs",\n                 "../../Arc/natives/natives-freetype-ios/build/robovm",\n                 "../../Arc/natives/natives-ios/build/libs",\n                 "../../Arc/natives/natives-ios/build/robovm",\n                 "../../Arc/backends/backend-robovm/build/libs",\n                 rootProject.file("../Arc/natives/natives-freetype-ios/libs"),\n                 rootProject.file("../Arc/natives/natives-ios/libs"))\n            include "**/*.a"\n            eachFile { println "[copyNatives+] copy \$it.sourcePath -> \$it.targetPath" }\n            // === 注入结束 ===};
-      $orig . $extra;
+    # 2) 对 Gradle 侧 copyNatives：**什么 CopySpec/from/include/eachFile 都不注入**，完全不碰
+    #    上游原任务里的 DefaultFileCopyDetails_Decorated 不支持 `sourcePath`/`targetPath`，
+    #    任何侵入性 eachFile 都会触发 MissingProperty；include "**/*.a" 还会把上游原 from 下的
+    #    非 .a 文件（例如 Arc iOS 侧 bundle/资源）过滤掉。复制 libarc-freetype.a 的工作统一
+    #    交给 bash 侧 (C.1) 处理，脚本在 :ios:createIPA 前就把 ios/libs/ 目录准备好，RoboVM
+    #    读取 robovm.xml <libs> 时不再空。这里仅在 copyNatives 闭包尾部追加一条无副作用的
+    #    doLast 诊断，方便 CI 日志看到 ios/libs 最终长得怎么样。
+    my $SQ2 = chr(39);
+    my $mark = qq{tasks\\.register\\($SQ2 copyNatives $SQ2 \\)};
+    s{($mark \s*\{ [\s\S]*?)(?=\n\}\s*\n)}{
+      my ($head) = ($1);
+      $head . qq{\n    doLast {\n        println "[copyNatives] ios/libs after copy:"\n        def libsDir = file("libs")\n        if (libsDir.exists()) {\n            libsDir.listFiles()?.sort()?.each { f ->\n                println("  \$f.name  (\$f.length() bytes)")\n            } ?: println("  (empty)")\n        } else {\n            println("  (libs/ dir missing)")\n        }\n    }\n};
     }gixe;
 
     # 3) afterEvaluate：参照 Mindustry-for-ios，给 RoboVM 构建任务附加 ios/libs 搜索路径。
