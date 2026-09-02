@@ -143,12 +143,37 @@ if [ -f "$IOS_GRADLE" ]; then
   # 再确保在 linkArgs/extraLinkFlags 声明位置补上 Mindustry/ios/libs 的 -L 搜索路径
   perl -0777 -pi -e '
     my $libs_added = 0;
+    # 形式 1：linkArgs = [ ... ] / extraLinkArgs = [ ... ] / extraLinkFlags = [ ... ]（键值写法）
     s{((?:linkArgs|extraLinkArgs|extraLinkFlags)\s*=\s*\[)}{
       $libs_added++;
       $1 . qq{\n        "-L", "\${project.projectDir}/libs",\n        "-Wl,-search_paths_first",}
     }ge;
+    # 形式 2：robovm { ... 闭包内赋值 linkArgs = [ ... ]（robovm 扩展 DSL 的常见写法）—— 命中与形式 1 等价，这里补兜底
     if (!$libs_added) {
-      $_ .= qq{\n// === build-ipa.sh 注入：确保链接器能从 Mindustry/ios/libs 找 -larc-freetype ===\ntasks.withType(org.robovm.gradle.tasks.CreateIPATask).configureEach {\n  doFirst {\n    project.ext.linkArgs = (project.hasProperty("linkArgs") ? project.linkArgs : []) + ["-L", new File(project(":ios").projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]\n  }\n}\n// === 注入结束 ===\n};
+      s{(\brobovm\s*\{[\s\S]*?\blinkArgs\s*=\s*\[)}{
+        $libs_added++;
+        $1 . qq{\n          "-L", "\${project.projectDir}/libs",\n          "-Wl,-search_paths_first",}
+      }sge;
+    }
+    # 形式 3：createIPA / robovmCreateIPATask 块内 ext.linkArgs（极端上游：完全靠任务扩展属性）
+    if (!$libs_added) {
+      s{((?:tasks\.(?:create|named)\s*\(\s*["'"'"']createIPA["'"'"']\s*\)(?:\s*\.configure)?\s*\{|createIPA\s*\{)[\s\S]*?)}{
+        $libs_added++;
+        my $head = $1;
+        $head . qq{\n    project.ext.set("linkArgs", (project.hasProperty("linkArgs") ? project.property("linkArgs") : []) + ["-L", new File(project.projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]);\n}
+      }sge;
+    }
+    # 形式 4：完全找不到上述任何声明 → 兜底改 robovm { … } 闭包末尾（如果存在 robovm{}），在其中加 linkArgs += […]
+    #        注意：不再引用 org.robovm.* 类名（未显式 import 的 Groovy 脚本解析阶段会把 "org" 当 project 属性而抛 MissingPropertyException）。
+    if (!$libs_added) {
+      if (!(s{(\brobovm\s*\{)}{
+        $libs_added++;
+        $1 . qq{\n    // === build-ipa.sh 注入：确保链接器搜索 Mindustry/ios/libs\n    linkArgs = (this.hasProperty("linkArgs") && this.linkArgs != null ? this.linkArgs : []) + ["-L", new File(project.projectDir, "libs").absolutePath, "-Wl,-search_paths_first"];\n}
+      }sge)) {
+        # 形式 5：连 robovm{} 块都没有 → 直接在文件末尾用 project.ext 设置 linkArgs，由 RoboVM 插件在配置读取时解析
+        $_ .= qq{\n// === build-ipa.sh 注入：链接器搜索 Mindustry/ios/libs (兜底)\nproject.ext.set("linkArgs", (project.hasProperty("linkArgs") ? project.property("linkArgs") : []) + ["-L", new File(project(":ios").projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]);\n// === 注入结束 ===\n};
+        $libs_added++;
+      }
     }
   ' "$IOS_GRADLE"
   echo "    (A.2) 解除 libarc-freetype.a 硬路径依赖：linkArgs 中的 -force_load + libarc-freetype.a 路径对替换为 -larc-freetype + 自动 -L Mindustry/ios/libs" >&2
