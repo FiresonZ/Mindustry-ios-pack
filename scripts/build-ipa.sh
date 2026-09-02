@@ -288,6 +288,30 @@ def _stripDec_bv(Object v) {
       my ($cast, $e) = ($1, $2);
       is_bv_expr($e) ? ("$cast " . wrap_bv($e)) : "$cast $e";
     }gixe) {}
+
+    # ---------- Group F: props["app.build"] / props.getProperty("app.build") 等 robovm.properties 键访问 ----------
+    # 覆盖模式：
+    #   props["app.build"].toInteger()          (Map 下标 -> .toXxx)
+    #   props.getProperty("app.build").toInteger()  (JavaBean 取属性 -> .toXxx)
+    #   props.app.build.toInteger()             (属性链 -> .toXxx)
+    # 也兼容 buildversion 的同样存取写法（与 Group A~E 交叉覆盖但幂等）
+    # 因为 replaceAll 已在 wrap_bv 中判断，不会重复插入。
+    while (s{
+        (?<!replaceAll\(")
+        (
+          \w+                                                         # 容器变量名：props/config/ext/...
+          (?:
+              \[\s*["'"'"'](?:app\.build|buildversion)["'"'"']\s*\]     #   ["key"] / ['key']
+            | \.(?:getProperty|property)\(\s*["'"'"'](?:app\.build|buildversion)["'"'"']\s*\)  #   .getProperty("key") / .property("key")
+            | \.\s*app\s*\.\s*build                                    #   .app.build 属性链
+          )
+          (?:\.toString\(\))?                                          # 可选 .toString()
+        )\.(toInteger|toLong|toBigInteger)\(\)
+    }{
+      my ($e, $m) = ($1, $2);
+      # 该组只针对 app.build / buildversion 键，肯定是版本相关的，直接 wrap
+      wrap_bv($e) . ".$m()";
+    }gixe) {}
   ' "$IOS_GRADLE"
 
   PATCHED_COUNT=$(grep -c 'replaceAll' "$IOS_GRADLE" 2>/dev/null || echo 0)
