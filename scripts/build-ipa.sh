@@ -69,11 +69,19 @@ cd "$BUILD_DIR"
 git clone --depth 1 "https://github.com/Anuken/Arc.git" Arc
 cd Arc
 if [ -n "$ARC_HASH" ]; then
-  git fetch --depth 1 origin "${ARC_HASH}"
-  git checkout "${ARC_HASH}" || {
-    echo "WARN: 指定的 Arc hash $ARC_HASH 未找到，回退到 master HEAD" >&2
-    git checkout master
-  }
+  # 注意：--depth 1 下 fetch 老 commit 可能失败；fetch 或 checkout 任一失败均回退到默认分支
+  if git fetch --depth 50 origin "${ARC_HASH}" 2>/dev/null && git checkout "${ARC_HASH}" 2>/dev/null; then
+    echo "    已检出指定 Arc hash: ${ARC_HASH}" >&2
+  else
+    # 再尝试扩大深度拉取（避免浅克隆刚好截断到该 commit）
+    if git fetch --unshallow 2>/dev/null && git checkout "${ARC_HASH}" 2>/dev/null; then
+      echo "    已通过 unshallow 检出 Arc hash: ${ARC_HASH}" >&2
+    else
+      DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | sed -n '/HEAD branch/s/.*: //p' || echo "master")
+      echo "WARN: 指定的 Arc hash $ARC_HASH 未找到，回退到 ${DEFAULT_BRANCH} HEAD" >&2
+      git checkout "${DEFAULT_BRANCH}" || git checkout master
+    fi
+  fi
 fi
 echo "    当前 Arc commit: $(git rev-parse --short HEAD)" >&2
 
