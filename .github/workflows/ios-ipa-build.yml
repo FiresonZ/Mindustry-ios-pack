@@ -44,6 +44,8 @@ concurrency:
 
 env:
   STATE_FILE: ${{ github.workspace }}/LAST_VERSION
+  # GitHub Actions runners 已弃用 Node 20，强制所有 Node-based actions 运行于 Node 24，消除告警
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # =========================================================
@@ -63,7 +65,7 @@ jobs:
         name: Checkout packager repo
 
       - name: Restore LAST_VERSION cache (跨 run 状态)
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: LAST_VERSION
           key: mindustry-ios-last-version
@@ -195,7 +197,7 @@ jobs:
           echo "Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)"
 
       - name: Setup JDK 17 (Temurin)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -208,7 +210,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
-          cache-cleanup: true
+          cache-cleanup: on-success
 
       - name: Run build-ipa.sh (unsigned)
         id: build
@@ -228,7 +230,7 @@ jobs:
 
       - name: Upload build log on failure
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-log-${{ needs.check-version.outputs.release_tag }}
           path: build-ipa.log
@@ -237,7 +239,7 @@ jobs:
 
       - name: Upload IPA as Artifact
         if: success()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Mindustry-iOS-${{ needs.check-version.outputs.release_tag }}
           path: |
@@ -290,7 +292,7 @@ jobs:
 
       - name: Save LAST_VERSION cache
         if: success()
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: LAST_VERSION
           key: mindustry-ios-last-version-${{ github.run_id }}
