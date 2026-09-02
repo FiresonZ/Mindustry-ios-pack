@@ -1,0 +1,32 @@
+# ==== Build Root ====
+build-root/
+build/
+
+# ==== Dist outputs ====
+dist/
+*.ipa
+*.meta.txt
+
+# ==== Build logs ====
+*.log
+
+# ==== macOS signing artifacts (local) ====
+*.p12
+*.mobileprovision
+*.cer
+*.key
+
+# ==== State ====
+# LAST_VERSION is intentionally kept in git so it survives cache eviction;
+# uncomment below if you prefer to keep it purely local.
+# LAST_VERSION
+
+# ==== macOS / IDE ====
+.DS_Store
+.idea/
+*.iml
+.vscode/
+
+# ==== Temporary keychains ====
+*.keychain
+*.keychain-db
