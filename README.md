@@ -8,7 +8,7 @@
 盯着 Anuken/Mindustry 的 Releases，自动拉 tag 源码出 iOS IPA，**不用苹果开发者账号、不用证书、不用描述文件**，装好 TrollStore 往设备里扔就能玩。源码版本号跟 App Store 那套对齐（`8.<build>.0`），不会打包出奇奇怪怪的版本。
 
 - 定时（每 6 小时）检测上游新 release，发现新版本就在 macos-14 上跑 RoboVM 打包
-- 固定未签名，省掉证书那一大坨流程和 secret 配置
+- 固定未签名，省掉证书那一大坨流程
 - 成功打包的版本写回 `LAST_VERSION`，下次就跳过，不会重复构建
 - 产物同时出现在 Actions Artifacts 和 GitHub Release，你哪里方便从哪里下
 
