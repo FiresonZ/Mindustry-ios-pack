@@ -16,19 +16,9 @@
 
 ---
 
-## 开始用（3 步搞定）
+## 开始用（2 步搞定）
 
-**1. 配置 Secret（你说已经配好 `PAT_GITHUB` 了，这步确认下就行）**
-
-仓库 Settings → Secrets and variables → Actions：
-
-| Secret | 作用 | 现在状态 |
-| --- | --- | --- |
-| `PAT_GITHUB` | 定时构建成功后，帮你把 `LAST_VERSION` commit & push 回仓库，避免 Actions cache 哪天被清空导致重复打包；**权限只要 `contents:write`** | 已配置 ✅（你说的） |
-
-> 没配 `PAT_GITHUB` 工作流也照样能跑，只是 `LAST_VERSION` 只存在 Actions cache 里，缓存失效就可能再打一遍相同版本而已。
-
-**2. 触发构建**
+**1. 触发构建**
 
 两种，二选一：
 
@@ -37,7 +27,7 @@
   - `build_version`：填数字，比如 `146`（会严格校验 tag `v146` 在 Anuken/Mindustry 是否存在，不存在直接停）。留空 = 自动用最新 release。
   - `force_build`：勾上就无视 `LAST_VERSION`，强制再打一遍。
 
-**3. 拿 IPA 装到手机**
+**2. 拿 IPA 装到手机**
 
 构建结束后：
 
@@ -83,7 +73,7 @@
 ├── LAST_VERSION                           上一次成功构建过的 tag，如 `v146`
 ├── LICENSE                                GPLv3
 ├── .gitignore                             build-root/、dist/、*.log、临时 keychain、证书文件
-└── README.md                              现在你在看的这一份
+└── README.md                              项目说明文档
 ```
 
 ---
@@ -153,7 +143,7 @@ CHECK_APPSTORE=true APPSTORE_BUNDLE_ID=io.anuke.mindustry ./scripts/check-versio
 ```
 每 6 小时触发 →  check-version 对比 LAST_VERSION  →  新的就 build
     ↑                                                  ↓
-    └──  缓存读取  ←  cache save  +  (有 PAT_GITHUB 时) git commit 回写
+    └──  缓存读取  ←  cache save  +  (可选) git commit 回写
 ```
 
 想重置状态让它再打一次？删 `LAST_VERSION` 文件，再去 Actions → Caches 清掉 `mindustry-ios-last-version-*` 这几条缓存。
@@ -187,7 +177,7 @@ A：挨个排查：
 **Q5：以后想改回签名走 TestFlight / App Store 要动哪几块？**
 A：三件事：
 1. `scripts/build-ipa.sh` 把 `SKIP_SIGNING="true"` 改回 `false`，并恢复 p12 / mobileprovision 导入那几行（之前的版本 git history 里都有，不用从零写）；
-2. Workflow 里把 `IOS_*` 六个签名 secret 加回来，env 再传给 build-ipa.sh；
+2. Workflow 里把签名相关凭据配置好，通过 env 传给 build-ipa.sh；
 3. build-ipa job 末尾加一个 `apple-actions/upload-testflight@v1` 步骤，把 `dist/*.ipa` 传 App Store Connect。
 
 ---
