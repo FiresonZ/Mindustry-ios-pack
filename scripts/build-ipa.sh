@@ -195,41 +195,37 @@ if [ -f "$IOS_GRADLE" ]; then
       pos($_) = undef;
     }
 
-    # 3) afterEvaluate：给 RoboVM 构建任务附加 ios/libs 搜索路径。
-    #    不写 org.robovm.* 类字面量（避免 Groovy 顶层 org 属性解析异常），
-    #    改用任务名匹配 + 动态 hasProperty("robovmConfig") 访问。
+    # 3) afterEvaluate：**逐行镜像 VincentZyu233/Mindustry-for-ios master/ios/build.gradle 写法**
+    #    原文：afterEvaluate {
+    #            def frameworkDir = file("libs")
+    #            if (frameworkDir.exists()) {
+    #                tasks.withType(org.robovm.gradle.tasks.AbstractRoboVMBuildTask).configureEach { task ->
+    #                    task.robovmConfig.frameworkPaths.add(frameworkDir)
+    #                }
+    #            }
+    #        }
+    #    过去几次炸 MissingPropertyException('org')，是因为 Groovy 脚本没写 import，类字面量在
+    #    顶层解析 `org` 时会走 project.'org' 属性查找而失败。解决：在 ios/build.gradle 顶部
+    #    加一行 import org.robovm.gradle.tasks.AbstractRoboVMBuildTask，让类名在脚本静态
+    #    import 表里被显式 resolve（参考仓库虽然没写 import，但它是原生 repo 子项目的
+    #    buildscript classpath 解析顺序刚好命中；我们 packager 下补这句即可和它行为一致）。
+    my $import_line = qq{import org.robovm.gradle.tasks.AbstractRoboVMBuildTask\n};
+    if (index($_, $import_line) < 0) {
+      # 优先插到首个 apply plugin / buildscript / plugins 声明之前（Groovy/Java 允许 import 在 script 任何顶层声明位置）
+      if (s{((?:^|\n)(?=apply\s+plugin|buildscript\s*\{|plugins\s*\{))}{qq{\n$import_line}}es) {
+      } else {
+        # 退化：插到第 1 行结尾
+        s{\n}{\n$import_line};
+      }
+    }
     my $inject = q{
 
-// === build-ipa.sh 注入：RoboVMConfig 附加 ios/libs 搜索路径，避免 libs/libarc-freetype.a 相对路径找不到
+// === build-ipa.sh 注入：逐行镜像 VincentZyu233/Mindustry-for-ios afterEvaluate 写法 ===
 afterEvaluate {
-    def iosLibs = file("libs")
-    if (!iosLibs.exists()) iosLibs.mkdirs()
-    def robovmBuildTaskNames = ["createIPA", "launchIPhoneSimulator", "launchIPadSimulator", "launchIOSDevice"]
-    tasks.matching { robovmBuildTaskNames.contains(it.name) }.configureEach { t ->
-        try {
-            if (t.hasProperty("robovmConfig") && t.robovmConfig != null) {
-                def cfg = t.robovmConfig
-                if (cfg.hasProperty("frameworkPaths") && cfg.frameworkPaths != null) {
-                    if (!cfg.frameworkPaths.contains(iosLibs)) cfg.frameworkPaths.add(iosLibs)
-                }
-                if (cfg.hasProperty("libraryPaths") && cfg.libraryPaths != null) {
-                    if (!cfg.libraryPaths.contains(iosLibs.absolutePath)) cfg.libraryPaths.add(iosLibs.absolutePath)
-                }
-                try {
-                    def backendJarDir = rootProject.file("../Arc/backends/backend-robovm/build/libs")
-                    if (backendJarDir.exists()) {
-                        def extractedDir = new File(System.getProperty("user.home"),
-                            ".robovm/cache/ios/arm64/release" + backendJarDir.absolutePath +
-                            ".extracted/META-INF/robovm/ios/libs")
-                        if (extractedDir.exists() && cfg.frameworkPaths != null
-                            && !cfg.frameworkPaths.contains(extractedDir.parentFile.parentFile)) {
-                            cfg.frameworkPaths.add(extractedDir.parentFile.parentFile)
-                        }
-                    }
-                } catch (ignored) {}
-            }
-        } catch (Exception e) {
-            println "[build-ipa] warn: attach ios/libs to RoboVMConfig failed: " + e.message
+    def frameworkDir = file("libs")
+    if (frameworkDir.exists()) {
+        tasks.withType(org.robovm.gradle.tasks.AbstractRoboVMBuildTask).configureEach { task ->
+            task.robovmConfig.frameworkPaths.add(frameworkDir)
         }
     }
 }
@@ -486,12 +482,16 @@ fi
 
 GRADLE_ARGS=(
   "-Prelease"
+  "-PnoLocalArc"
   "-Pbuildversion=${BUILD_VERSION}"
   "--no-daemon"
   "--stacktrace"
 )
-# 固定未签名模式：不再向 Gradle 传入 signIdentity / provisioningProfile 参数
-echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >&2
+# -PnoLocalArc：镜像 VincentZyu 参考仓库构建参数。上游 settings.gradle 中仅当 noLocalArc
+#   未被设置 且 ../Arc 目录存在时才 includeBuild("../Arc")，开启后会用 maven 坐标解析
+#   Arc（arcModule(...) 调用退化为 group:artifact:version），避免本地 Arc 源码在
+#   MetalANGLEKit 附加后出现 includeBuild 与 jar 内原生 META-INF 搜索路径的冲突。
+echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；并传入 -PnoLocalArc 与参考仓库保持一致" >&2
 
   # ===== (C.0) RoboVM 配置修正：保留原始 <libs> 结构 + 附加 libs 到 frameworkPaths 搜索基准 =====
   # 教训：RoboVM 2.3.24 不接受 <lib variant="release|debug">libs/libarc-freetype.a</lib>，
@@ -509,40 +509,87 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >
   if [ -f "$IOS_ROBOVM_XML" ]; then
     perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
       use strict; use warnings;
-      # 1) 保证 libs/libarc-freetype.a 至少在 <libs> 里出现一次：
-      #    - 若已存在（无论前后空格多少）：不再动，避免破坏 <lib> 结构合法性；
-      #    - 若 <libs> 存在但缺少这条：在 </libs> 之前补一条无属性的 <lib>。
-      #    - 若连 <libs> 都没有：在 </config> 或 </robovm> 之前补完整 <libs> 块。
+      # 严格镜像 VincentZyu233/Mindustry-for-ios master/ios/robovm.xml 的 <libs>/<frameworkPaths>：
+      #   <libs> 中仅一条 <lib>libs/libarc-freetype.a</lib>（绝对不能写 variant 等未知属性）
+      #   <frameworkPaths> = <path>libs</path> + <path>${user.home}/.m2/.../robovm-dist/2.3.24/.../arm64</path>
+      # 任何不在参考仓库里的 XML 元素都不允许追加（就是过去几轮 PlatformVariant.release 报错的根因）。
       my $lib_entry = qq{<lib>libs/libarc-freetype.a</lib>};
-      if (!m{libs/libarc-freetype\.a}) {
-        if (m{(<libs>[\s\S]*?</libs>)}) {
-          # 在 </libs> 前插入 lib_entry（保留缩进：假设 </libs> 前是换行+两个空格的缩进水平）
-          s{(</libs>)}{    $lib_entry\n  $1}s;
-        } else {
-          s{(</(?:config|robovm)>)}
-           {  <libs>\n    $lib_entry\n  </libs>\n$1}s;
-        }
+      my $vm_arm64_home = qq{\${user.home}/.m2/repository/com/mobidevelop/robovm/robovm-dist/2.3.24/unpacked/robovm-2.3.24/lib/vm/ios/arm64};
+
+      # ---- <libs> 块：保持参考仓库结构 ----
+      if (m{<libs>[\s\S]*?</libs>}) {
+        s{(<libs>)([\s\S]*?)(</libs>)}{
+          my ($open, $body, $close) = ($1, $2, $3);
+          # 1) 确保 <lib>z</lib> 至少出现一次（上游/参考仓库里都有，robovm 链接器要 zlib 压缩库）
+          if (index($body, '<lib>z</lib>') < 0 && index($body, 'z</lib>') < 0) {
+            $body = "    <lib>z</lib>\n" . $body;
+          }
+          # 2) 确保 libs/libarc-freetype.a 至少出现一次
+          if ($body !~ m{libs/libarc-freetype\.a}) {
+            $body .= "    $lib_entry\n  ";
+          }
+          $open . $body . $close;
+        }sge;
+      } else {
+        s{(</(?:config|robovm)>)}
+         {  <libs>\n    <lib>z</lib>\n    $lib_entry\n  </libs>\n$1}s;
       }
 
-      # 2) 在 <frameworkPaths>（若已有）中追加 Mindustry/ios/libs 的相对目录，
-      #    避免 v159.7 原有的 backend-robovm META-INF cache 路径是唯一 frameworkPath 时
-      #    找不到 ios/libs 作为 framework/lib 搜索基准。
-      s{(<frameworkPaths>(?:[\s\S]*?)</frameworkPaths>)}{
-        my $block = $1;
-        my $tag = qq{<path>libs</path>};
-        if (index($block, $tag) < 0) {
-          $block =~ s{(</frameworkPaths>)}{  $tag\n  $1};
-        }
-        $block;
-      }sge;
-
-      # 3) 如果文件完全没有 <frameworkPaths>，就在 </config> 或 </robovm> 之前兜底插入
-      if (!m{<frameworkPaths>}) {
+      # ---- <frameworkPaths>：严格和参考仓库一致，只写 2 条 path ----
+      my $p1 = qq{<path>libs</path>};
+      my $p2 = qq{<path>$vm_arm64_home</path>};
+      if (m{<frameworkPaths>[\s\S]*?</frameworkPaths>}) {
+        s{(<frameworkPaths>)([\s\S]*?)(</frameworkPaths>)}{
+          my ($open, $body, $close) = ($1, $2, $3);
+          for my $need (($p1, $p2)) {
+            if (index($body, $need) < 0) {
+              $body .= "    $need\n  ";
+            }
+          }
+          $open . $body . $close;
+        }sge;
+      } else {
         s{(</(?:config|robovm)>)}
-         {  <frameworkPaths>\n    <path>libs</path>\n  </frameworkPaths>\n$1}s;
+         {  <frameworkPaths>\n    $p1\n    $p2\n  </frameworkPaths>\n$1}s;
+      }
+
+      # ---- <frameworks>：严格镜像参考仓库，确保 MetalANGLEKit/libGLESv2/libEGL/libfeature_support 存在 ----
+      # 参考顺序（前 -> 后）: arc, UIKit, MetalANGLEKit, libGLESv2, libEGL, libfeature_support,
+      #                       Metal, QuartzCore, CoreGraphics, CoreAudio, AudioToolbox, AVFoundation
+      # 做法：先确保 <frameworks> 存在；再按 reference 顺序保证必须的 4 个不缺失；同时保留原有
+      # 未被覆盖的框架（arc/UIKit 通常上游已有）保持不变。
+      my @must_frameworks = (
+        'arc',
+        'UIKit',
+        'MetalANGLEKit',
+        'libGLESv2',
+        'libEGL',
+        'libfeature_support',
+        'Metal',
+        'QuartzCore',
+        'CoreGraphics',
+        'CoreAudio',
+        'AudioToolbox',
+        'AVFoundation',
+      );
+      if (m{<frameworks>[\s\S]*?</frameworks>}) {
+        s{(<frameworks>)([\s\S]*?)(</frameworks>)}{
+          my ($open, $body, $close) = ($1, $2, $3);
+          for my $fw_name (@must_frameworks) {
+            my $need_entry = qq{<framework>$fw_name</framework>};
+            if ($body !~ m{<framework>\s*\Q$fw_name\E\s*</framework>}) {
+              $body .= "    $need_entry\n  ";
+            }
+          }
+          $open . $body . $close;
+        }sge;
+      } else {
+        my $inner = join("", map { "    <framework>$_</framework>\n" } @must_frameworks);
+        s{(</(?:config|robovm)>)}
+         {  <frameworks>\n${inner}  </frameworks>\n$1}s;
       }
 __BUILD_IPA_PATCH_ROBOVM_XML__
-    echo "    (A.3) robovm.xml：已确保 <lib>libs/libarc-freetype.a</lib> 至少出现一次，且 <frameworkPaths> 追加 <path>libs</path>（不再注入 variant= 属性，避免 RoboVM 2.3.24 枚举非法）" >&2
+    echo "    (A.3) robovm.xml：严格镜像 VincentZyu 参考仓库 <libs>+<frameworkPaths>+<frameworks> 三部分；MetalANGLEKit/libGLESv2/libEGL/libfeature_support 已补齐；不写 variant 等未知属性" >&2
   fi
 
   # ===== (C.0 2/2) 优先从依赖 jar 解 freetype 静态库（不再依赖 Arc 原生任务成功） =====
@@ -555,6 +602,44 @@ __BUILD_IPA_PATCH_ROBOVM_XML__
   # Mindustry/ios/libs/libarc-freetype.a 已经存在（即便是后续 copy{} 覆盖成无符号的版本也没关系）。
   IOS_LIBS_DIR_EARLY="${BUILD_DIR}/Mindustry/ios/libs"
   mkdir -p "$IOS_LIBS_DIR_EARLY"
+  ARC_DIR="${BUILD_DIR}/Arc"
+  # 镜像 VincentZyu build-ios.yml "Prepare native libraries"：
+  #   mkdir -p ios/libs
+  #   cp ../Arc/natives/natives-freetype-ios/libs/libarc-freetype.a ios/libs/
+  #   mkdir -p ../Arc/natives/natives-ios/libs
+  # 注意：参考仓库本身依赖 Anuken/Arc 仓库在 natives/natives-freetype-ios/libs / 下 commit 了
+  # 预编译好的 libarc-freetype.a（与上游 v159 相同）。我们这里做同样的直接 cp，找不到时再退回：
+  #   1) 真实 Arc 目录下同样位置直接拷；
+  #   2) 依赖 jar (~/.gradle/caches / .m2) 中 META-INF/robovm/ios/libs 解出；
+  #   3) 再跑 Arc jar 构建 / 生成 stub（C.1）。
+  echo "    (C.0 1/2) 镜像参考仓库：直接从 Arc/natives/natives-freetype-ios/libs 物理拷贝 libarc-freetype.a 到 ios/libs" >&2
+  REFERENCE_CP_SRC="${ARC_DIR}/natives/natives-freetype-ios/libs/libarc-freetype.a"
+  mkdir -p "${ARC_DIR}/natives/natives-ios/libs" 2>/dev/null || true
+  if [ -f "$REFERENCE_CP_SRC" ] && [ ! -s "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
+    cp -f "$REFERENCE_CP_SRC" "$IOS_LIBS_DIR_EARLY/libarc-freetype.a"
+    echo "      ✓ cp $REFERENCE_CP_SRC -> ios/libs/libarc-freetype.a （与 VincentZyu build-ios.yml 一致）" >&2
+  fi
+
+  # ===== (C.0 1½/2) 镜像参考仓库 build-ios.yml Prepare native libraries：下载 MetalANGLEKit v1.2.1 =====
+  # 参考 exact：
+  #   curl -L -o /tmp/MetalANGLEKit.zip https://github.com/libgdx/MetalANGLEKit/releases/download/v1.2.1/metalanglekit.zip
+  #   echo "c7785cbe15eb9e5962677513725c8f0e33039f344235cc7691ee5ac35ff5ea91  /tmp/MetalANGLEKit.zip" | shasum -a 256 -c
+  #   unzip -q /tmp/MetalANGLEKit.zip -d ios/libs
+  #   find ios/libs -maxdepth 2 \( -name "*.framework" -o -name "*.xcframework" \) | sort
+  # MetalANGLEKit 解压后会在 ios/libs 下得到 MetalANGLEKit.framework，与上面的 robovm.xml
+  #   <framework>MetalANGLEKit</framework> + <path>libs</path> 形成闭环。
+  echo "    (C.0 1.5/2) 镜像参考仓库：下载 MetalANGLEKit v1.2.1 -> sha256 校验 -> unzip 到 ios/libs" >&2
+  METAL_ZIP="/tmp/MetalANGLEKit.zip"
+  METAL_URL="https://github.com/libgdx/MetalANGLEKit/releases/download/v1.2.1/metalanglekit.zip"
+  METAL_SHA256="c7785cbe15eb9e5962677513725c8f0e33039f344235cc7691ee5ac35ff5ea91"
+  # 参考仓库的 MetalANGLEKit framework 必须存在，否则链接阶段会直接报
+  #   "framework not found MetalANGLEKit"。因此 download/checksum/unzip 任何一步失败都必须终止（set -e 已覆盖）。
+  curl -fSL --connect-timeout 20 --retry 3 --retry-delay 2 \
+    -o "$METAL_ZIP" "$METAL_URL"
+  echo "${METAL_SHA256}  ${METAL_ZIP}" | shasum -a 256 -c -
+  unzip -q -o "$METAL_ZIP" -d "$IOS_LIBS_DIR_EARLY"
+  echo "      ✓ MetalANGLEKit 解压完成，ios/libs 下 framework 列表：" >&2
+  find "$IOS_LIBS_DIR_EARLY" -maxdepth 2 \( -name '*.framework' -o -name '*.xcframework' \) | sort >&2 || true
   # 候选 jar 路径：.gradle 缓存、build 输出、.m2、~/.robovm
   JAR_SEARCH_DIRS=(
     "$HOME/.gradle/caches/modules-2/files-2.1"
@@ -564,28 +649,33 @@ __BUILD_IPA_PATCH_ROBOVM_XML__
     "$HOME/.m2/repository"
     "$HOME/.robovm"
   )
-  echo "    (C.0) 前置搜索 natives-freetype-ios jar，META-INF/robovm/ios/libs 提取 libarc-freetype.a：" >&2
+  echo "    (C.0 2/2) 再从依赖 jar 缓存 / 构建输出中兜底解 natives-freetype-ios:META-INF/robovm/ios/libs/libarc-freetype.a" >&2
   FOUND_EARLY=0
-  for D in "${JAR_SEARCH_DIRS[@]}"; do
-    [ -d "$D" ] || continue
-    JARLIST=$(find "$D" -name '*natives-freetype-ios*.jar' -type f 2>/dev/null || true)
-    [ -z "$JARLIST" ] && continue
-    TMP_E=$(mktemp -d)
-    for J in $JARLIST; do
-      if unzip -l "$J" 2>/dev/null | grep -q 'META-INF/robovm/ios/libs/libarc-freetype\.a'; then
-        unzip -o -q -j -d "$TMP_E" "$J" 'META-INF/robovm/ios/libs/libarc-freetype.a' >/dev/null 2>&1 || true
-        if [ -f "$TMP_E/libarc-freetype.a" ] && [ ! -f "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
-          cp -f "$TMP_E/libarc-freetype.a" "$IOS_LIBS_DIR_EARLY/libarc-freetype.a"
-          echo "      ✓ 从 $J 解出 .a 并拷贝到 ios/libs" >&2
-          FOUND_EARLY=1
-          break 2
+  if [ -s "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
+    FOUND_EARLY=1
+  else
+    for D in "${JAR_SEARCH_DIRS[@]}"; do
+      [ -d "$D" ] || continue
+      JARLIST=$(find "$D" -name '*natives-freetype-ios*.jar' -type f 2>/dev/null || true)
+      [ -z "$JARLIST" ] && continue
+      TMP_E=$(mktemp -d)
+      for J in $JARLIST; do
+        if unzip -l "$J" 2>/dev/null | grep -q 'META-INF/robovm/ios/libs/libarc-freetype\.a'; then
+          unzip -o -q -j -d "$TMP_E" "$J" 'META-INF/robovm/ios/libs/libarc-freetype.a' >/dev/null 2>&1 || true
+          if [ -f "$TMP_E/libarc-freetype.a" ] && [ ! -s "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
+            cp -f "$TMP_E/libarc-freetype.a" "$IOS_LIBS_DIR_EARLY/libarc-freetype.a"
+            echo "      ✓ 从 $J 解出 .a 并拷贝到 ios/libs" >&2
+            FOUND_EARLY=1
+            rm -rf "$TMP_E"
+            break 2
+          fi
         fi
-      fi
+      done
+      rm -rf "$TMP_E"
     done
-    rm -rf "$TMP_E"
-  done
+  fi
   if [ "$FOUND_EARLY" -eq 0 ]; then
-    echo "      ℹ jar 缓存搜索暂未命中（将在 C.1 阶段再兜底 Arc 原生构建 & 生成占位）" >&2
+    echo "      ℹ 直接物理拷贝 + jar 缓存搜索暂未命中（将在 C.1 阶段再兜底 Arc 原生构建 & 生成占位）" >&2
   fi
   echo "      前置检查 ios/libs 结果：" >&2
   ls -la "$IOS_LIBS_DIR_EARLY" >&2 || true
@@ -657,6 +747,8 @@ fi
 FT_SRC=""
 # 1) 直接文件系统上的静态库（lipo/单架构）
 DIR_CANDIDATES=(
+  "${BUILD_DIR}/Arc/natives/natives-freetype-ios/libs"        # 1st: 镜像参考仓库 build-ios.yml cp 位置
+  "${BUILD_DIR}/Arc/natives/natives-ios/libs"                #        （VincentZyu 同结构兄弟路径）
   "${BUILD_DIR}/Arc/natives/natives-freetype-ios/build"
   "${BUILD_DIR}/Arc/extensions/freetype/build"
   "${BUILD_DIR}/Arc/build"
