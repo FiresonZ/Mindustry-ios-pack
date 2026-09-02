@@ -1,7 +1,9 @@
-# Mindustry iOS IPA 自动打包工程
+# Mindustry iOS IPA 自动打包工程（未签名版 · TrollStore 安装）
 
 > 自动从 [Anuken/Mindustry](https://github.com/Anuken/Mindustry) 获取源码，
-> **严格按上游版本号** 打包 iOS IPA，支持 GitHub Actions 定时检测新版本并自动构建。
+> **严格按上游版本号** 打包 iOS IPA（**未签名**），通过 GitHub Actions 定时检测新版本并自动构建。
+> 生成的 IPA 使用 **TrollStore（推荐）** 或 AltStore / Sideloadly 等侧载工具安装，
+> **无需 Apple 开发者账号、证书、描述文件**。
 
 *本仓库是 Mindustry（GPLv3）的**衍生构建工程**，自身亦采用 **GNU GPLv3** 协议，见 [`LICENSE`](./LICENSE)。*
 
@@ -38,10 +40,10 @@
 ```
 Mindustry-iOS-Packager/
 ├── .github/workflows/
-│   └── ios-ipa-build.yml      # 自动检测 + 构建 工作流
+│   └── ios-ipa-build.yml      # 自动检测 + 构建 工作流（输出未签名 IPA）
 ├── scripts/
 │   ├── check-version.sh       # 检测上游最新 release / App Store 版本对比
-│   ├── build-ipa.sh           # 核心：拉源码→同步版本→签名→打包 IPA
+│   ├── build-ipa.sh           # 核心：拉源码→同步版本→RoboVM 未签名打包 IPA
 │   └── bump-last-version.sh   # 构建成功后更新 LAST_VERSION 状态文件
 ├── LAST_VERSION               # 上次成功构建的 tag（持久化状态，如 v146）
 ├── dist/                      # 构建产物输出目录
@@ -62,65 +64,73 @@ Mindustry-iOS-Packager/
 | **Schedule** | 每 6 小时（UTC 0/6/12/18:17）自动检测上游 Release；新版本 → 自动构建 |
 | **workflow_dispatch** | 在 Actions 页面手动触发；可传入 `build_version` 强制构建某个历史版本 |
 
-### 3.2 必选 Secrets（真机签名）
+### 3.2 Secrets（仅 1 个可选）
 
-| Secret 名称 | 说明 | 获取方式 |
-| --- | --- | --- |
-| `IOS_CERT_BASE64` | 开发者 `.p12` 证书的 Base64 字符串 | 钥匙串导出 `Certificates.p12` → `base64 -i Certificates.p12` |
-| `IOS_CERT_PASSWORD` | `.p12` 证书密码 | 导出时自行设置 |
-| `IOS_PROV_PROFILE_BASE64` | `.mobileprovision` 文件的 Base64 | Apple Dev Portal → Profiles → Download → `base64 -i *.mobileprovision` |
-| `IOS_PROV_PROFILE_UUID` | Provisioning Profile UUID | Profile 文件内 `<key>UUID</key>` 或 Apple Dev Portal 详情页 |
-| `IOS_SIGN_IDENTITY` | 签名身份全称 | `security find-identity -p codesigning -v` 输出中的长名字 |
-| `IOS_PROV_PROFILE_NAME` | Provisioning Profile 名称 | Apple Dev Portal 配置的名称 |
-
-### 3.3 可选 Secrets
+> 本工程输出**未签名 IPA**，**无需**配置 Apple 开发者相关 Secrets（证书 / 描述文件等均已移除）。
 
 | Secret 名称 | 说明 |
 | --- | --- |
-| `PAT_GITHUB` | 具有 `contents:write` 权限的 Personal Access Token；用于在 schedule 构建成功后 **自动 commit 回写 `LAST_VERSION`**，避免跨 run 缓存漂移。未设置时仅依赖 cache。 |
+| `PAT_GITHUB`（可选） | 具有 `contents:write` 权限的 Personal Access Token；用于在 schedule 构建成功后 **自动 commit 回写 `LAST_VERSION`**，避免跨 run 缓存漂移。未设置时仅依赖 cache。 |
 
-### 3.4 手动触发参数
+### 3.3 手动触发参数
 
 ```
 build_version: 146              # 留空=自动检测；否则必须严格是 Anuken/Mindustry 已存在的 tag v<build_version>
 force_build:  false             # 即使 LAST_VERSION 已是最新也强制构建
-skip_signing: false             # 跳过签名，生成未签名 IPA（需 AltStore/TrollStore 等方式安装）
 ```
+
+> 已移除 `skip_signing` 开关：工作流固定输出未签名 IPA。
 
 ---
 
-## 四、本地构建（macOS）
+## 四、如何安装生成的 IPA（TrollStore / AltStore / Sideloadly）
 
-> 要求：macOS 13+ / Xcode 14+ 且已安装 Command Line Tools、JDK 17
+由于本工程固定输出 **未签名 IPA**，不能直接通过 App Store / iTunes 安装到真机，
+请使用下列方案之一：
 
-### 4.1 未签名快速构建（验证流程）
+### 4.1 TrollStore（推荐 · 免费 · 无需续签）
+
+**适用系统**：iOS 14.0 – 16.6.1（部分机型可到 16.6.1 / A12+ 15.0–16.5.1 等，以官方文档为准）。
+
+1. 按 [TrollStore 官方指南](https://github.com/opa334/TrollStore) 安装 TrollStore 到你的设备；
+2. 在 GitHub Actions Artifacts 或 Release Assets 中下载 `Mindustry-iOS-*.ipa`；
+3. 用 TrollStore 打开该 IPA → 点击「Install」，完成后桌面即可看到 Mindustry 图标。
+
+> TrollStore 永久签名安装，不受 7 天免费证书限制，强烈推荐。
+
+### 4.2 AltStore / Sideloadly（需要 Apple ID 自签）
+
+- **AltStore（免费个人 ID，7 天需续签）**：安装 AltServer → AltStore 侧载 IPA，每 7 天重签一次；
+- **Sideloadly**：GUI 工具，支持免费 / 付费 Apple ID 侧载，同样 7 天续签（付费开发者账号 1 年）。
+
+### 4.3 典型 FAQ
+
+**Q：为什么不用 TestFlight / App Store？**
+A：因为 TestFlight / App Store 需要开发者证书上传 App Store Connect，
+而本工程刻意**不依赖任何 Apple 开发者账号**，面向自由侧载的用户使用场景。
+
+---
+
+## 五、本地构建（macOS · 输出未签名 IPA）
+
+> 要求：macOS 13+ / Xcode 14+ 且已安装 Command Line Tools、JDK 17。
+> **无需**导入任何 Apple 证书或描述文件。
 
 ```bash
 cd Mindustry-iOS-Packager
-BUILD_VERSION=146 SKIP_SIGNING=true ./scripts/build-ipa.sh
+BUILD_VERSION=146 ./scripts/build-ipa.sh
 ```
 
 产物：
 
 ```
-dist/Mindustry-iOS-v146_8.146.0.ipa            ← 未签名 IPA
+dist/Mindustry-iOS-v146_8.146.0.ipa            ← 未签名 IPA（TrollStore 直接装）
 dist/Mindustry-iOS-v146_8.146.0.ipa.meta.txt   ← 构建元数据（commit hash、版本号、工具版本）
-```
-
-### 4.2 真机签名构建
-
-预先把 Apple Development 证书和描述文件安装到本机，然后：
-
-```bash
-BUILD_VERSION=146 \
-IOS_SIGN_IDENTITY="Apple Development: Your Name (TEAM12345)" \
-IOS_PROV_PROFILE_NAME="Mindustry iOS Dev" \
-./scripts/build-ipa.sh
 ```
 
 ---
 
-## 五、版本检测脚本单独使用
+## 六、版本检测脚本单独使用
 
 单独执行检测而不构建：
 
@@ -145,7 +155,7 @@ CHECK_APPSTORE=true APPSTORE_BUNDLE_ID=io.anuke.mindustry ./scripts/check-versio
 
 ---
 
-## 六、版本状态管理
+## 七、版本状态管理
 
 `LAST_VERSION` 文件记录**上一次成功构建**的上游 tag，避免重复构建。
 更新路径：
@@ -164,7 +174,7 @@ CHECK_APPSTORE=true APPSTORE_BUNDLE_ID=io.anuke.mindustry ./scripts/check-versio
 
 ---
 
-## 七、常见问题 FAQ
+## 八、常见问题 FAQ
 
 **Q1：为什么要按 tag v146 检出，而不是直接用 master 或某个 commit？**
 A：为了确保打包内容与上游发布到 App Store / Google Play 的内容**完全一致**。
@@ -184,14 +194,15 @@ A：RoboVM 2.3.26 与 Xcode 版本强相关，建议：
 - 确认 `ios/build.gradle` 里的 `robovm-gradle-plugin:2.3.26` 可用
 - 本地验证：`cd ios && ../gradlew createIPA -Pbuildversion=XXX ...`
 
-**Q4：签名通过但真机闪退？**
+**Q4：TrollStore 装完点开就闪退？**
 A：常见原因：
-1. 设备 UDID 未加入 Provisioning Profile
+1. TrollStore 安装方式异常 → 重装 TrollStore 后重装 IPA
 2. `MinimumOSVersion=15.0.0` 导致 iOS 14 以下不能运行
 3. arm64e 架构异常（当前仅编译 arm64）
 
-**Q5：如何上传到 App Store / TestFlight？**
-A：在 build-ipa job 末尾追加以下步骤即可：
+**Q5：我想改为上传到 App Store / TestFlight，可以吗？**
+A：需要你先购买 Apple Developer 账号，并自行恢复 Apple 证书 / 描述文件注入逻辑。
+最简单的做法是在 build-ipa job 末尾追加：
 ```yaml
 - name: Upload to App Store Connect
   uses: apple-actions/upload-testflight@v1
@@ -200,10 +211,11 @@ A：在 build-ipa job 末尾追加以下步骤即可：
     username: ${{ secrets.APPLE_ID }}
     password: ${{ secrets.APPLE_APP_PASSWORD }}
 ```
+并在 `build-ipa.sh` 中把 `SKIP_SIGNING` 改为 `false`、重新接入证书 / 描述文件导入流程。
 
 ---
 
-## 八、协议与衍生声明
+## 九、协议与衍生声明
 
 ```
 Mindustry iOS IPA Packager
@@ -220,7 +232,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
 ### 关于上游 Mindustry
