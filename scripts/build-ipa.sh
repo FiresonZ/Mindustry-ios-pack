@@ -493,40 +493,35 @@ GRADLE_ARGS=(
 # 固定未签名模式：不再向 Gradle 传入 signIdentity / provisioningProfile 参数
 echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >&2
 
-  # ===== (C.0) RoboVM 配置修正：确保 robovm.xml 对 libs/libarc-freetype.a 的相对路径更稳 =====
-  # Anuken/Mindustry v159.7 的 robovm.xml 写：
-  #   <libs>
-  #     <lib>libs/libarc-freetype.a</lib>
-  #   </libs>
-  # RoboVM 会把 <lib> 解析成 -force_load <基于 RoboVM 工作目录的绝对路径>。
-  # 当上游 Mindustry/ios/libs 在 CI 上没有 Arc/natives/natives-freetype-ios/libs 拷过去的
-  # .a 时，路径就不存在 → ld: library '…/libarc-freetype.a' not found。
-  # 修：(a) 把 <lib value> 改成带 variant 的形式，避免变体目录选择时路径飘；(b) 在 <libs>
-  # 中补一条 fallback，指向同一目录下的备用文件名；(c) 最后兜底：若 Mindustry/ios/libs
-  # 在 copyNatives 结束后仍为空，则继续用 C.1 壳侧把文件补齐。
+  # ===== (C.0) RoboVM 配置修正：保留原始 <libs> 结构 + 附加 libs 到 frameworkPaths 搜索基准 =====
+  # 教训：RoboVM 2.3.24 不接受 <lib variant="release|debug">libs/libarc-freetype.a</lib>，
+  # 它的 PlatformVariant 枚举只允许在特定元素上用，直接写会在 Config read 阶段抛
+  # IllegalArgumentException: No enum constant org.robovm.compiler.config.PlatformVariant.release
+  # （参见新上传日志 L116）。Anuken/Mindustry v159.7 上游 robovm.xml 本身也是纯文本
+  # <lib>libs/libarc-freetype.a</lib>，没有任何 variant 属性。
+  # 真正让 RoboVM 找到该文件的办法：把 Mindustry/ios/libs 目录加入 RoboVM 的 frameworkPaths，
+  # 并确保 **shell 级**在 createIPA 运行前把 libarc-freetype.a 物理落到 ios/libs（C.0 早注入
+  # + C.1 兜底 + 依赖）。这里对 xml 的改动仅限无风险、属性合法的三类改动：
+  #   1) 仅当 xml 完全没有 <lib>libs/libarc-freetype.a</lib> 时，才插入一条纯 <lib>（通常上游已存在）；
+  #   2) 在 <frameworkPaths> 里追加一条 <path>libs</path>；
+  #   3) 完全缺失 <frameworkPaths> 时才兜底建一个。
   IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
   if [ -f "$IOS_ROBOVM_XML" ]; then
     perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
       use strict; use warnings;
-      # 1) 为现有 <lib>libs/libarc-freetype.a</lib> 元素加几个保险属性，
-      #    并把它相对路径保留，但在同 <libs> 内追加备用的 <lib> 条目，
-      #    确保 "Mindustry/ios/libs/libarc-freetype.a" 最终可被 linker 找到。
-      if (s{(<lib>\s*libs/libarc-freetype\.a\s*</lib>)}{
-        my $orig = $1;
-        $orig . "\n    " . '<lib>libs/libarc-freetype.a</lib>'
-             . "\n    " . '<lib variant="release">libs/libarc-freetype.a</lib>'
-             . "\n    " . '<lib variant="debug">libs/libarc-freetype.a</lib>';
-      }sge) {
-        # 处理去重：保留顺序，但避免完全相同的 <lib> 条目反复叠加
-        my %seen; my @lines = split(/\n/, $_);
-        @lines = grep {
-          my $raw = $_; $raw =~ s/\s+//g;
-          if ($raw =~ m{^<lib>libs/libarc-freetype\.a</lib>$} and $seen{"plain"}++) { 0 }
-          elsif ($raw =~ m{^<libvariant="release">libs/libarc-freetype\.a</lib>$} and $seen{"release"}++) { 0 }
-          elsif ($raw =~ m{^<libvariant="debug">libs/libarc-freetype\.a</lib>$} and $seen{"debug"}++) { 0 }
-          else { 1 }
-        } @lines;
-        $_ = join("\n", @lines);
+      # 1) 保证 libs/libarc-freetype.a 至少在 <libs> 里出现一次：
+      #    - 若已存在（无论前后空格多少）：不再动，避免破坏 <lib> 结构合法性；
+      #    - 若 <libs> 存在但缺少这条：在 </libs> 之前补一条无属性的 <lib>。
+      #    - 若连 <libs> 都没有：在 </config> 或 </robovm> 之前补完整 <libs> 块。
+      my $lib_entry = qq{<lib>libs/libarc-freetype.a</lib>};
+      if (!m{libs/libarc-freetype\.a}) {
+        if (m{(<libs>[\s\S]*?</libs>)}) {
+          # 在 </libs> 前插入 lib_entry（保留缩进：假设 </libs> 前是换行+两个空格的缩进水平）
+          s{(</libs>)}{    $lib_entry\n  $1}s;
+        } else {
+          s{(</(?:config|robovm)>)}
+           {  <libs>\n    $lib_entry\n  </libs>\n$1}s;
+        }
       }
 
       # 2) 在 <frameworkPaths>（若已有）中追加 Mindustry/ios/libs 的相对目录，
@@ -536,7 +531,7 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >
         my $block = $1;
         my $tag = qq{<path>libs</path>};
         if (index($block, $tag) < 0) {
-          $block =~ s{</frameworkPaths>}{  $tag\n  </frameworkPaths>};
+          $block =~ s{(</frameworkPaths>)}{  $tag\n  $1};
         }
         $block;
       }sge;
@@ -547,7 +542,7 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段" >
          {  <frameworkPaths>\n    <path>libs</path>\n  </frameworkPaths>\n$1}s;
       }
 __BUILD_IPA_PATCH_ROBOVM_XML__
-    echo "    (A.3) robovm.xml 已附加 freetype .a 变体与 <frameworkPaths><path>libs</path></frameworkPaths> 兜底" >&2
+    echo "    (A.3) robovm.xml：已确保 <lib>libs/libarc-freetype.a</lib> 至少出现一次，且 <frameworkPaths> 追加 <path>libs</path>（不再注入 variant= 属性，避免 RoboVM 2.3.24 枚举非法）" >&2
   fi
 
   # ===== (C.0 2/2) 优先从依赖 jar 解 freetype 静态库（不再依赖 Arc 原生任务成功） =====
