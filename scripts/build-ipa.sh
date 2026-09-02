@@ -121,23 +121,29 @@ if [ -f "$IOS_GRADLE" ]; then
   #       `linkArgs` / `extraLinkArgs` / `extraLinkFlags` 这三个属性（直接写会抛
   #       "Could not set unknown property 'linkArgs' for extension 'robovm'"）。
   #       上游 v159 实际通过：
-  #         1) <libs><lib>libs/libarc-freetype.a</lib></libs> 声明在 robovm.xml，
+  #         1) <libs><lib>libs/libarc-freetype.a</lib></libs> +
+  #            <frameworkPaths><path>libs</path></frameworkPaths> 共同声明在 robovm.xml。
+  #            相对路径 libs/libarc-freetype.a 的搜索基准完全靠 XML 里的
+  #            <frameworkPaths><path>libs</path> 生效，**不是** task.robovmConfig。
   #         2) tasks.register('copyNatives') 把 ../../Arc/natives/natives-freetype-ios/libs
   #            和 ../../Arc/natives/natives-ios/libs 拷入 ios/libs。
-  #       于是在 build-ipa.sh 侧不再“伪造 linkArgs = […]”注入；改为：
-  #         a) 兜底改写 copyNatives 的 from 列表，覆盖本 packager 目录结构，
-  #            同时让 createIPA 显式依赖 copyNatives（上游 deploy 才依赖，tools:pack
-  #            执行 copyAssets→copyNatives 但 CI 直接跑 :ios:createIPA 会绕过）。
-  #         b) 参考 VincentZyu 的 afterEvaluate 注入，把 ios/libs 目录追加到
-  #            RoboVMConfig.frameworkPaths / libraryPaths，避免 libs/libarc-freetype.a
-  #            相对路径在 CI 上解析失败；同时顺带补上 backend-robovm 抽取目录缺失导致
-  #            的 "search path '…/backend-robovm/…/META-INF/robovm/ios/libs' not found"
-  #            告警（用 rootProject / buildscript 类路径兜底）。
-  # A.2 补丁：用 here-doc 把 perl 代码通过 stdin 喂给 perl，完全规避 shell
-  #      外层单引号与 perl 代码内引号（Groovy 单引号字符串字面量 '"'"'…'"'"' 等）冲突。
-  #      说明：`perl -0777 -pi - "$IOS_GRADLE"` 让 perl 从 stdin 读代码，`-` 占位
-  #      目标文件参数；heredoc 使用 单引号EOF（不做 shell 变量展开），避免 perl 代码里
-  #      的 $/、$1、@dl_lines 等被 shell 当成变量替换。
+  #       重要（2026-09-02 CI #14 新错误）：
+  #         官方 RoboVM 2.3.24 的源码 grep 显示 AbstractRoboVMTask / AbstractRoboVMBuildTask
+  #         / ArchiveTask **完全没有** `robovmConfig` 字段，RoboVMPluginExtension
+  #         **也没有** frameworkPaths 属性。VincentZyu afterEvaluate 的
+  #         `task.robovmConfig.frameworkPaths.add(...)` 在“他 fork 的自定义 RoboVM
+  #         或 老 Gradle<9 Groovy 装饰器 MissingProperty 软失败”下碰巧不炸，但我们
+  #         用官方 RoboVM 2.3.24 + Gradle 9.3.1 会严格抛
+  #         MissingPropertyException: Could not get unknown property 'robovmConfig' for
+  #         task ':ios:createIPA' of type org.robovm.gradle.tasks.ArchiveTask。
+  #         （就是 Run #14 你贴的那一段）。
+  #       因此 A.2 **不再 mirror 那段 afterEvaluate / import**（无效且有害）。
+  #       A.2 现在只保留 2 段最小、安全、可证明生效的补丁：
+  #         a) 追加 createIPA.dependsOn copyNatives（否则 createIPA 会绕过 copyNatives）。
+  #         b) copyNatives register 外层追加诊断 doLast，打印 ios/libs 清单。
+  # A.2 补丁：用 here-doc 把 perl 代码通过 stdin 喂给 perl，完全规避 shell 外层单引号
+  #      与 perl 代码内引号冲突。`perl -0777 -pi - "$IOS_GRADLE"`：perl 从 stdin 读代码，
+  #      heredoc 使用 单引号EOF（不做 shell 变量展开），避免 perl 代码里 $/ $1 等被展开。
   perl -0777 -pi - "$IOS_GRADLE" <<'__BUILD_IPA_PATCH_A2__'
     use strict; use warnings;
     my $SQ = chr(39);   # single-quote char, NEVER spell a literal ' in this heredoc body
@@ -194,46 +200,8 @@ if [ -f "$IOS_GRADLE" ]; then
       }
       pos($_) = undef;
     }
-
-    # 3) afterEvaluate：**逐行镜像 VincentZyu233/Mindustry-for-ios master/ios/build.gradle 写法**
-    #    原文：afterEvaluate {
-    #            def frameworkDir = file("libs")
-    #            if (frameworkDir.exists()) {
-    #                tasks.withType(org.robovm.gradle.tasks.AbstractRoboVMBuildTask).configureEach { task ->
-    #                    task.robovmConfig.frameworkPaths.add(frameworkDir)
-    #                }
-    #            }
-    #        }
-    #    过去几次炸 MissingPropertyException('org')，是因为 Groovy 脚本没写 import，类字面量在
-    #    顶层解析 `org` 时会走 project.'org' 属性查找而失败。解决：在 ios/build.gradle 顶部
-    #    加一行 import org.robovm.gradle.tasks.AbstractRoboVMBuildTask，让类名在脚本静态
-    #    import 表里被显式 resolve（参考仓库虽然没写 import，但它是原生 repo 子项目的
-    #    buildscript classpath 解析顺序刚好命中；我们 packager 下补这句即可和它行为一致）。
-    my $import_line = qq{import org.robovm.gradle.tasks.AbstractRoboVMBuildTask\n};
-    if (index($_, $import_line) < 0) {
-      # 优先插到首个 apply plugin / buildscript / plugins 声明之前（Groovy/Java 允许 import 在 script 任何顶层声明位置）
-      if (s{((?:^|\n)(?=apply\s+plugin|buildscript\s*\{|plugins\s*\{))}{qq{\n$import_line}}es) {
-      } else {
-        # 退化：插到第 1 行结尾
-        s{\n}{\n$import_line};
-      }
-    }
-    my $inject = q{
-
-// === build-ipa.sh 注入：逐行镜像 VincentZyu233/Mindustry-for-ios afterEvaluate 写法 ===
-afterEvaluate {
-    def frameworkDir = file("libs")
-    if (frameworkDir.exists()) {
-        tasks.withType(org.robovm.gradle.tasks.AbstractRoboVMBuildTask).configureEach { task ->
-            task.robovmConfig.frameworkPaths.add(frameworkDir)
-        }
-    }
-}
-// === 注入结束 ===
-};
-    $_ .= $inject;
 __BUILD_IPA_PATCH_A2__
-  echo "    (A.2) 参考上游 v159 + Mindustry-for-ios：让 createIPA dependsOn copyNatives；扩展 copyNatives from；afterEvaluate 把 ios/libs 注入 RoboVMConfig 的搜索路径" >&2
+  echo "    (A.2) 保留 2 个最小安全补丁：createIPA dependsOn copyNatives + copyNatives 诊断 doLast。不再注入 reference 的 afterEvaluate/import（官方 RoboVM 2.3.24 源码无 robovmConfig 字段，Gradle9 下必炸 MissingPropertyException；frameworkPaths 改由 robovm.xml <path>libs</path> 声明生效）。" >&2
 
   # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
   #     上游 ios/build.gradle 在配置阶段把 buildversion（传入 "159.7"）当整数解析时抛异常。
