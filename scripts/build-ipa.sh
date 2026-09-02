@@ -719,33 +719,25 @@ if [ -f "$VER_FILE" ]; then
   echo "    版本校验通过 ✓" >&2
 fi
 
-echo "==> [7/7] 构建未签名 IPA (ios:createIPA, iosSkipSigning=true)" >&2
-echo "    iosSkipSigning 已在 [3b/7] 阶段提前设置 ✓" >&2
+echo "==> [7/7] 构建未签名 IPA（镜像 reference：ios:incrementConfig ios:deploy，iosSkipSigning=true + -PnoLocalArc）" >&2
+echo "    iosSkipSigning 已在 [3b/7] 阶段提前设置 ✓；-PnoLocalArc 使 settings.gradle 跳过 includeBuild(\"../Arc\") 与 reference 行为一致 ✓" >&2
 
 # ---- (C.1) 确保 ios/libs/libarc-freetype.a 存在（RoboVM 链接阶段 `-force_load` 硬依赖该路径）----
-# 上游 Mindustry 的 ios/build.gradle 通过额外的 link 参数强制加载该静态库，但 v159 起
-# 该 .a 不再被自动放入 Mindustry/ios/libs，导致 clang 报 "library '.../ios/libs/libarc-freetype.a' not found"。
-# 修复策略：
-#   1) 先尝试构建 Arc 侧 freetype iOS 原生产物：Arc:natives:natives-freetype-ios:jar 会触发
-#      freetype 的 iOS arm64/armv7 静态库交叉编译（lipo 输出的 .a 通常打包进 jar/META-INF/robovm）。
-#   2) 从 Arc 构建产物中搜索已生成的 libarc-freetype.a（包括 build/libs/ 下 .jar 内 META-INF/robovm/ios/libs
-#      以及 natives-freetype-ios/build 直接产出的 .a），并复制到 Mindustry/ios/libs 下。
-#   3) 如果构建后仍未找到，则再在整个 BUILD_DIR 以及 ~/.gradle/caches / ~/.m2 / ~/.robovm 中兜底搜索，
-#      避免上游调整目录导致 CI 再次断链。
+# 注意：reference 作者使用 -PnoLocalArc 明确禁止 Gradle 把 ../Arc 当作复合构建；因此
+# 这里 **不能再** 跑 ./gradlew :Arc:natives:natives-freetype-ios:build（否则 Gradle 会在
+# DefaultIncludedBuildTaskGraph / VintageBuildTreeWorkController 报“未知子项目 :Arc”
+# 调度失败——就是 2026-09-02 新 CI 日志里出现的那一段）。
+# 正确做法（与 reference 完全一致）：
+#   ① 直接从 Anuken/Arc clone 出的物理目录 cp libarc-freetype.a（C.0 1/2 已执行）；
+#   ② 失败则从 ~/.gradle/caches / .m2 等依赖 jar 里解 META-INF/robovm/ios/libs（C.0 2/2 已执行）；
+#   ③ 仍缺时在 C.1 这里走文件系统兜底 + jar 二次扫 + 占位 .a。
 IOS_LIBS_DIR="${BUILD_DIR}/Mindustry/ios/libs"
 mkdir -p "$IOS_LIBS_DIR"
 
-echo "    (C.1) 准备 Arc freetype iOS 原生静态库（强制加载依赖）" >&2
-# 先尝试触发 freetype iOS 原生构建（RoboVM 项目里通常由 ios/arm64 架构任务产出 .a 并打进 jar）
-if ./gradlew "${GRADLE_ARGS[@]}" :Arc:natives:natives-freetype-ios:build :Arc:natives:natives-freetype-ios:jar 2>&1 | tail -20 >&2; then
-  echo "      ✓ :Arc:natives:natives-freetype-ios 构建完成" >&2
-else
-  echo "      ⚠ :Arc:natives:natives-freetype-ios 构建未成功，继续尝试从已有产物中搜索 libarc-freetype.a" >&2
-fi
-
+echo "    (C.1) 准备 Arc freetype iOS 原生静态库（不调用 Gradle :Arc:* 任务；纯文件系统 / jar 兜底，对齐 noLocalArc）" >&2
 # 搜索候选位置：直接产出的 .a 以及 jar 内部 META-INF/robovm/ios/libs/*.a
 FT_SRC=""
-# 1) 直接文件系统上的静态库（lipo/单架构）
+# 1) 直接文件系统上的静态库（lipo/单架构）——注意：首两项完全镜像 reference build-ios.yml 兄弟路径
 DIR_CANDIDATES=(
   "${BUILD_DIR}/Arc/natives/natives-freetype-ios/libs"        # 1st: 镜像参考仓库 build-ios.yml cp 位置
   "${BUILD_DIR}/Arc/natives/natives-ios/libs"                #        （VincentZyu 同结构兄弟路径）
@@ -768,11 +760,23 @@ for D in "${DIR_CANDIDATES[@]}"; do
   fi
 done
 
-# 2) 仍没找到？再从 Arc 或依赖 jar 里提取 META-INF/robovm/ios/libs/libarc-freetype*.a
+# 2) 仍没找到？再从 Arc 物理目录或依赖 jar 搜索 dir 里提取 META-INF/robovm/ios/libs/libarc-freetype*.a
 if [ -z "$FT_SRC" ]; then
-  JAR_CANDIDATES=$(find "${BUILD_DIR}/Arc" -name 'natives-freetype-ios*.jar' -type f 2>/dev/null || true)
+  JAR_CANDIDATES=""
+  for JD in \
+    "${BUILD_DIR}/Arc" \
+    "${BUILD_DIR}/Arc/natives/natives-freetype-ios/build/libs" \
+    "${BUILD_DIR}/Arc/backends/backend-robovm/build/libs" \
+    "$HOME/.gradle/caches/modules-2/files-2.1" \
+    "$HOME/.m2/repository"; do
+    [ -d "$JD" ] || continue
+    JAR_CANDIDATES="${JAR_CANDIDATES}
+$(find "$JD" -name 'natives-freetype-ios*.jar' -type f 2>/dev/null || true)"
+  done
+  JAR_CANDIDATES=$(printf '%s' "$JAR_CANDIDATES" | sed '/^$/d' | tr '\n' ' ')
   TMP_EXTRACT="$(mktemp -d)"
   for J in $JAR_CANDIDATES; do
+    [ -z "$J" ] && continue
     if unzip -l "$J" 2>/dev/null | grep -q 'META-INF/robovm/ios/libs/libarc-freetype'; then
       unzip -o -q -d "$TMP_EXTRACT" "$J" 'META-INF/robovm/ios/libs/libarc-freetype*.a' >/dev/null 2>&1 || true
       EXTRACTED=$(find "$TMP_EXTRACT" -name 'libarc-freetype*.a' -type f 2>/dev/null | head -1 || true)
@@ -817,20 +821,20 @@ if [ -f "$IOS_LIBS_DIR/libarc-freetype.a" ]; then
     lipo -info "$IOS_LIBS_DIR/libarc-freetype.a" >&2 || true
   fi
 else
-  echo "      ✗ libarc-freetype.a 仍不存在，:ios:createIPA 将在链接阶段失败！" >&2
+  echo "      ✗ libarc-freetype.a 仍不存在，ios:deploy (createIPA) 将在链接阶段失败！" >&2
 fi
 
-./gradlew "${GRADLE_ARGS[@]}" :ios:createIPA
+# ===== 最终构建：严格镜像 VincentZyu build-ios.yml Build IPA 段 =====
+#   ./gradlew -PnoLocalArc ios:incrementConfig ios:deploy \
+#     -Pbuildversion=$VER -Probovm.iosSkipSigning=true --no-daemon
+# deploy 任务内部依赖 createIPA；copyAssets 依赖 :tools:pack + copyNatives；因此整条链路
+# 的 sprite pack / freetype copy / IPA 产出 会一次性跑完，与 reference 行为完全一致。
+./gradlew "${GRADLE_ARGS[@]}" ios:incrementConfig ios:deploy
 GRADLE_RC=$?
 
-# ========= 若 createIPA 失败：抽取 RoboVM 链接阶段 clang stderr 到日志 =========
-# 过去多次失败时 tail -150 build-ipa.log 只剩下 RoboVMGradleException 的上层 stack，
-# 真实的 ld/clang 错误（Undefined symbols / wrong architecture / file format invalid /
-# library not found 等）只被写入 ios/build/robovm.tmp 下的 *stderr 或 AbstractTarget
-# 在 ToolchainUtil.link 里捕获的 stderr。这里尝试从几处常见位置 dump，确保下次 CI 失败
-# 时日志直接包含真实错误行，而不是只有空的 “exit value: 1”。
+# ========= 若 ios:deploy(createIPA) 失败：抽取 RoboVM 链接阶段 clang stderr 到日志 =========
 if [ "$GRADLE_RC" -ne 0 ]; then
-  echo "===== :ios:createIPA 失败 ($GRADLE_RC)，转储 RoboVM 链接诊断 =====" >&2
+  echo "===== ios:deploy (createIPA) 失败 ($GRADLE_RC)，转储 RoboVM 链接诊断 =====" >&2
   TMP_ROBOVM="${BUILD_DIR}/Mindustry/ios/build/robovm.tmp"
   if [ -d "$TMP_ROBOVM" ]; then
     echo "--- robovm.tmp 目录结构 ---" >&2
