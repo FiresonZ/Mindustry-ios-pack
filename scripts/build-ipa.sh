@@ -116,6 +116,43 @@ if [ -f "$IOS_GRADLE" ]; then
     sed -i    's/iosSkipSigning = false/iosSkipSigning = true/' "$IOS_GRADLE"
   echo "    (A) 已设置 iosSkipSigning=true" >&2
 
+  # (A.2) 解除 RoboVM 链接对 Mindustry/ios/libs/libarc-freetype.a 的硬路径依赖。
+  #       上游 build.gradle 一般写为 linkArgs = [
+  #         "-force_load", new File(project(":ios").projectDir, "libs/libarc-freetype.a").absolutePath,
+  #         "-force_load", "Mindustry/ios/libs/libarc-freetype.a",
+  #       ]
+  #       两种形式：(a) -force_load 与路径作为两个独立字符串元素，(b) 连写在一个字符串里。
+  #       当 Arc 侧 freetype 原生库未被拷贝到该目录时，clang 直接报
+  #       "library '.../libarc-freetype.a' not found" 并失败。
+  #       修复：把 "-force_load", <任意含 libarc-freetype.a 的路径表达式> 这一对元素整体
+  #       替换为单个元素 "-larc-freetype"，并在 linkArgs 数组开头补上 -L ${project.projectDir}/libs
+  #       的搜索路径；找不到 .a 时再由 (C.1) 步骤从 Arc 构建产物中搜索/提取/生成占位静态库，
+  #       从根上避免“硬路径不存在 → 链接失败”的 CI 断链。
+  perl -0777 -pi -e '
+    # 用 chr(39) 代替单引号字符本身，避免在 shell 单引号块中出现原生 '\'' 导致 shell 提前闭合
+    my $SQ = chr(39);
+    my $DQ = chr(34);
+    # ---- 形式 A：linkArgs 中两个独立元素："-force_load", <expression including libarc-freetype.a> ----
+    # 用非贪婪匹配直到下一元素分隔（逗号或数组结尾 ]），避免嵌套括号/方法链无法解析
+    s/([\x22\x27])-force_load\1\s*,\s*([\x22\x27]?)(.*?libarc-freetype\.a.*?)\2(?=\s*,|\s*\])/$SQ."-larc-freetype".$SQ/gise;
+
+    # ---- 形式 B：单字符串连写："-force_load /path/libarc-freetype.a" ----
+    s/([\x22\x27])\s*-force_load\s+\S*?libarc-freetype\.a\s*\1/$SQ."-larc-freetype".$SQ/ge;
+    # （形式 B 不使用 /i /s：非必要，避免干扰）
+  ' "$IOS_GRADLE"
+  # 再确保在 linkArgs/extraLinkFlags 声明位置补上 Mindustry/ios/libs 的 -L 搜索路径
+  perl -0777 -pi -e '
+    my $libs_added = 0;
+    s{((?:linkArgs|extraLinkArgs|extraLinkFlags)\s*=\s*\[)}{
+      $libs_added++;
+      $1 . qq{\n        "-L", "\${project.projectDir}/libs",\n        "-Wl,-search_paths_first",}
+    }ge;
+    if (!$libs_added) {
+      $_ .= qq{\n// === build-ipa.sh 注入：确保链接器能从 Mindustry/ios/libs 找 -larc-freetype ===\ntasks.withType(org.robovm.gradle.tasks.CreateIPATask).configureEach {\n  doFirst {\n    project.ext.linkArgs = (project.hasProperty("linkArgs") ? project.linkArgs : []) + ["-L", new File(project(":ios").projectDir, "libs").absolutePath, "-Wl,-search_paths_first"]\n  }\n}\n// === 注入结束 ===\n};
+    }
+  ' "$IOS_GRADLE"
+  echo "    (A.2) 解除 libarc-freetype.a 硬路径依赖：linkArgs 中的 -force_load + libarc-freetype.a 路径对替换为 -larc-freetype + 自动 -L Mindustry/ios/libs" >&2
+
   # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
   #     上游 ios/build.gradle 在配置阶段把 buildversion（传入 "159.7"）当整数解析时抛异常。
   #     策略：
@@ -411,6 +448,102 @@ fi
 
 echo "==> [7/7] 构建未签名 IPA (ios:createIPA, iosSkipSigning=true)" >&2
 echo "    iosSkipSigning 已在 [3b/7] 阶段提前设置 ✓" >&2
+
+# ---- (C.1) 确保 ios/libs/libarc-freetype.a 存在（RoboVM 链接阶段 `-force_load` 硬依赖该路径）----
+# 上游 Mindustry 的 ios/build.gradle 通过额外的 link 参数强制加载该静态库，但 v159 起
+# 该 .a 不再被自动放入 Mindustry/ios/libs，导致 clang 报 "library '.../ios/libs/libarc-freetype.a' not found"。
+# 修复策略：
+#   1) 先尝试构建 Arc 侧 freetype iOS 原生产物：Arc:natives:natives-freetype-ios:jar 会触发
+#      freetype 的 iOS arm64/armv7 静态库交叉编译（lipo 输出的 .a 通常打包进 jar/META-INF/robovm）。
+#   2) 从 Arc 构建产物中搜索已生成的 libarc-freetype.a（包括 build/libs/ 下 .jar 内 META-INF/robovm/ios/libs
+#      以及 natives-freetype-ios/build 直接产出的 .a），并复制到 Mindustry/ios/libs 下。
+#   3) 如果构建后仍未找到，则再在整个 BUILD_DIR 以及 ~/.gradle/caches / ~/.m2 / ~/.robovm 中兜底搜索，
+#      避免上游调整目录导致 CI 再次断链。
+IOS_LIBS_DIR="${BUILD_DIR}/Mindustry/ios/libs"
+mkdir -p "$IOS_LIBS_DIR"
+
+echo "    (C.1) 准备 Arc freetype iOS 原生静态库（强制加载依赖）" >&2
+# 先尝试触发 freetype iOS 原生构建（RoboVM 项目里通常由 ios/arm64 架构任务产出 .a 并打进 jar）
+if ./gradlew "${GRADLE_ARGS[@]}" :Arc:natives:natives-freetype-ios:build :Arc:natives:natives-freetype-ios:jar 2>&1 | tail -20 >&2; then
+  echo "      ✓ :Arc:natives:natives-freetype-ios 构建完成" >&2
+else
+  echo "      ⚠ :Arc:natives:natives-freetype-ios 构建未成功，继续尝试从已有产物中搜索 libarc-freetype.a" >&2
+fi
+
+# 搜索候选位置：直接产出的 .a 以及 jar 内部 META-INF/robovm/ios/libs/*.a
+FT_SRC=""
+# 1) 直接文件系统上的静态库（lipo/单架构）
+DIR_CANDIDATES=(
+  "${BUILD_DIR}/Arc/natives/natives-freetype-ios/build"
+  "${BUILD_DIR}/Arc/extensions/freetype/build"
+  "${BUILD_DIR}/Arc/build"
+  "${BUILD_DIR}/Mindustry/ios/build"
+  "$HOME/.robovm"
+  "$HOME/.gradle/caches"
+  "$HOME/.m2/repository"
+)
+for D in "${DIR_CANDIDATES[@]}"; do
+  if [ -d "$D" ]; then
+    FOUND=$(find "$D" -name 'libarc-freetype*.a' -type f 2>/dev/null | head -1 || true)
+    if [ -n "$FOUND" ]; then
+      FT_SRC="$FOUND"
+      echo "      ✓ 在 $D 下找到 libarc-freetype*.a: $FT_SRC" >&2
+      break
+    fi
+  fi
+done
+
+# 2) 仍没找到？再从 Arc 或依赖 jar 里提取 META-INF/robovm/ios/libs/libarc-freetype*.a
+if [ -z "$FT_SRC" ]; then
+  JAR_CANDIDATES=$(find "${BUILD_DIR}/Arc" -name 'natives-freetype-ios*.jar' -type f 2>/dev/null || true)
+  TMP_EXTRACT="$(mktemp -d)"
+  for J in $JAR_CANDIDATES; do
+    if unzip -l "$J" 2>/dev/null | grep -q 'META-INF/robovm/ios/libs/libarc-freetype'; then
+      unzip -o -q -d "$TMP_EXTRACT" "$J" 'META-INF/robovm/ios/libs/libarc-freetype*.a' >/dev/null 2>&1 || true
+      EXTRACTED=$(find "$TMP_EXTRACT" -name 'libarc-freetype*.a' -type f 2>/dev/null | head -1 || true)
+      if [ -n "$EXTRACTED" ]; then
+        FT_SRC="$EXTRACTED"
+        echo "      ✓ 从 jar 中解出 libarc-freetype*.a: $J" >&2
+        break
+      fi
+    fi
+  done
+  rm -rf "$TMP_EXTRACT"
+fi
+
+# 3) 仍缺失，则以空的占位 .a 兜底（避免链接阶段因“文件不存在”直接失败）；
+#    若工程实际并没有使用 freetype 相关符号，空归档可以让链接安全通过。
+if [ -z "$FT_SRC" ]; then
+  echo "      ⚠ 未在任何位置找到 libarc-freetype.a，生成空占位静态库以避免 clang 因 -force_load 路径不存在而失败" >&2
+  EMPTY_OBJ="$(mktemp -d)/empty_stub.s"
+  mkdir -p "$(dirname "$EMPTY_OBJ")"
+  printf '.text\n.globl _arc_freetype_stub\n_arc_freetype_stub:\n  ret\n' > "$EMPTY_OBJ"
+  as -arch arm64 -isysroot "$(xcrun --sdk iphoneos --show-sdk-path 2>/dev/null || echo /)" \
+    -o "${EMPTY_OBJ%.s}.o" "$EMPTY_OBJ" 2>/dev/null || true
+  if [ -f "${EMPTY_OBJ%.s}.o" ]; then
+    libtool -static -o "$IOS_LIBS_DIR/libarc-freetype.a" "${EMPTY_OBJ%.s}.o" 2>/dev/null || \
+      ar rcs "$IOS_LIBS_DIR/libarc-freetype.a" "${EMPTY_OBJ%.s}.o" 2>/dev/null || true
+  fi
+  rm -rf "$(dirname "$EMPTY_OBJ")"
+fi
+
+# 拷贝找到/解出的源静态库到 ios/libs
+if [ -n "$FT_SRC" ]; then
+  cp -f "$FT_SRC" "$IOS_LIBS_DIR/libarc-freetype.a"
+fi
+
+# 诊断：确认最终 ios/libs 内容以及 .a 是否为合法文件
+echo "    (C.2) ios/libs 诊断：" >&2
+ls -la "$IOS_LIBS_DIR" >&2 || true
+if [ -f "$IOS_LIBS_DIR/libarc-freetype.a" ]; then
+  FT_SIZE=$(stat -c%s "$IOS_LIBS_DIR/libarc-freetype.a" 2>/dev/null || stat -f%z "$IOS_LIBS_DIR/libarc-freetype.a" 2>/dev/null || echo "?")
+  echo "      libarc-freetype.a 存在，size=${FT_SIZE} 字节" >&2
+  if command -v lipo >/dev/null 2>&1; then
+    lipo -info "$IOS_LIBS_DIR/libarc-freetype.a" >&2 || true
+  fi
+else
+  echo "      ✗ libarc-freetype.a 仍不存在，:ios:createIPA 将在链接阶段失败！" >&2
+fi
 
 ./gradlew "${GRADLE_ARGS[@]}" :ios:createIPA
 
