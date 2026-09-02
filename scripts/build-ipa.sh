@@ -133,33 +133,71 @@ if [ -f "$IOS_GRADLE" ]; then
   #            相对路径在 CI 上解析失败；同时顺带补上 backend-robovm 抽取目录缺失导致
   #            的 "search path '…/backend-robovm/…/META-INF/robovm/ios/libs' not found"
   #            告警（用 rootProject / buildscript 类路径兜底）。
-  perl -0777 -pi -e '
-    # 关键：脚本中绝不出现 shell 单引号字符本身（会立刻闭合外层 shell '\'' 单引号块），
-    #      全部用 chr(39) 拼接。
-    my $SQ = chr(39);
+  # A.2 补丁：用 here-doc 把 perl 代码通过 stdin 喂给 perl，完全规避 shell
+  #      外层单引号与 perl 代码内引号（Groovy 单引号字符串字面量 '"'"'…'"'"' 等）冲突。
+  #      说明：`perl -0777 -pi - "$IOS_GRADLE"` 让 perl 从 stdin 读代码，`-` 占位
+  #      目标文件参数；heredoc 使用 单引号EOF（不做 shell 变量展开），避免 perl 代码里
+  #      的 $/、$1、@dl_lines 等被 shell 当成变量替换。
+  perl -0777 -pi - "$IOS_GRADLE" <<'__BUILD_IPA_PATCH_A2__'
+    use strict; use warnings;
+    my $SQ = chr(39);   # single-quote char, NEVER spell a literal ' in this heredoc body
+    my $DQ = chr(34);
 
     # 1) 任务链：确保 createIPA 在 copyNatives 执行完后再跑
     if (!/createIPA\s*\.dependsOn\s+(?:[^\n]*?\b)copyNatives\b/) {
       s/(createIPA\.dependsOn\s+build)/$1\ncreateIPA.dependsOn copyNatives/;
     }
 
-    # 2) 对 Gradle 侧 copyNatives：**什么 CopySpec/from/include/eachFile 都不注入**，完全不碰
-    #    上游原任务里的 DefaultFileCopyDetails_Decorated 不支持 `sourcePath`/`targetPath`，
-    #    任何侵入性 eachFile 都会触发 MissingProperty；include "**/*.a" 还会把上游原 from 下的
-    #    非 .a 文件（例如 Arc iOS 侧 bundle/资源）过滤掉。复制 libarc-freetype.a 的工作统一
-    #    交给 bash 侧 (C.1) 处理，脚本在 :ios:createIPA 前就把 ios/libs/ 目录准备好，RoboVM
-    #    读取 robovm.xml <libs> 时不再空。这里仅在 copyNatives 闭包尾部追加一条无副作用的
-    #    doLast 诊断，方便 CI 日志看到 ios/libs 最终长得怎么样。
-    my $SQ2 = chr(39);
-    my $mark = qq{tasks\\.register\\($SQ2 copyNatives $SQ2 \\)};
-    s{($mark \s*\{ [\s\S]*?)(?=\n\}\s*\n)}{
-      my ($head) = ($1);
-      $head . qq{\n    doLast {\n        println "[copyNatives] ios/libs after copy:"\n        def libsDir = file("libs")\n        if (libsDir.exists()) {\n            libsDir.listFiles()?.sort()?.each { f ->\n                println("  \$f.name  (\$f.length() bytes)")\n            } ?: println("  (empty)")\n        } else {\n            println("  (libs/ dir missing)")\n        }\n    }\n};
-    }gixe;
+    # 2) copyNatives register 任务：在其最外层 } 之前追加诊断 doLast 块。
+    #    算法：平衡花括号扫描（支持 Groovy 字符串字面量，避免误计字符串内 {}）。
+    #    注入时不触碰 copy{} 内部，不调用 eachFile/from/include，
+    #    不再用 DefaultFileCopyDetails 的 targetPath/sourcePath 属性（会炸）。
+    my $cn_header = qq{tasks\\.register\\(${SQ}copyNatives${SQ}\\)};
+    if (/\G.*?($cn_header\s*\{)/gcs) {
+      my $pos = pos($_) - length($1);
+      my $len = length($_);
+      my $depth = 0;
+      my $i = $pos;
+      my ($in_sq, $in_dq) = (0, 0);
+      my @dl_lines = (
+        "",
+        "    doLast {",
+        '        println "[copyNatives] ios/libs after copy:"',
+        '        def libsDir = file("libs")',
+        '        if (libsDir.exists()) {',
+        '            libsDir.listFiles()?.sort()?.each { f ->',
+        '                println("  " + f.name + "  (" + f.length() + " bytes)")',
+        '            } ?: println("  (empty)")',
+        '        } else {',
+        '            println("  (libs/ dir missing)")',
+        '        }',
+        "    }",
+      );
+      my $dl_footer = join("\n", @dl_lines) . "\n";
+      while ($i < $len) {
+        my $c = substr($_, $i, 1);
+        if (!$in_sq && !$in_dq && $c eq "\\") { $i += 2; next; }
+        if (!$in_dq && $c eq $SQ)   { $in_sq = !$in_sq; $i++; next; }
+        if (!$in_sq && $c eq $DQ)   { $in_dq = !$in_dq; $i++; next; }
+        if (!$in_sq && !$in_dq) {
+          if    ($c eq '{') { $depth++; }
+          elsif ($c eq '}') {
+            $depth--;
+            if ($depth == 0) {
+              substr($_, $i, 0) = $dl_footer;
+              pos($_) = $i + length($dl_footer);
+              last;
+            }
+          }
+        }
+        $i++;
+      }
+      pos($_) = undef;
+    }
 
-    # 3) afterEvaluate：参照 Mindustry-for-ios，给 RoboVM 构建任务附加 ios/libs 搜索路径。
-    #    关键：不用 org.robovm.* 直接类名引用 → 避免 Groovy 解析期把顶层 "org" 当成 project 属性
-    #    炸 MissingPropertyException。改按任务名字匹配 + 动态 hasProperty("robovmConfig") 访问。
+    # 3) afterEvaluate：给 RoboVM 构建任务附加 ios/libs 搜索路径。
+    #    不写 org.robovm.* 类字面量（避免 Groovy 顶层 org 属性解析异常），
+    #    改用任务名匹配 + 动态 hasProperty("robovmConfig") 访问。
     my $inject = q{
 
 // === build-ipa.sh 注入：RoboVMConfig 附加 ios/libs 搜索路径，避免 libs/libarc-freetype.a 相对路径找不到
@@ -198,7 +236,7 @@ afterEvaluate {
 // === 注入结束 ===
 };
     $_ .= $inject;
-  ' "$IOS_GRADLE"
+__BUILD_IPA_PATCH_A2__
   echo "    (A.2) 参考上游 v159 + Mindustry-for-ios：让 createIPA dependsOn copyNatives；扩展 copyNatives from；afterEvaluate 把 ios/libs 注入 RoboVMConfig 的搜索路径" >&2
 
   # (B) 修复小数版本号（如 159.7）触发的 NumberFormatException
