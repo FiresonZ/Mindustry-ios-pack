@@ -702,6 +702,23 @@ echo "    iosSkipSigning 已在 [3b/7] 阶段提前设置 ✓；-PnoLocalArc 使
 IOS_LIBS_DIR="${BUILD_DIR}/Mindustry/ios/libs"
 mkdir -p "$IOS_LIBS_DIR"
 
+# ====== 链接前诊断：dump ios/libs 完整内容 + robovm.xml 最终内容 ======
+echo "====== [DIAG] ios/libs 目录内容（链接前最终状态）====== " >&2
+ls -laR "$IOS_LIBS_DIR" 2>/dev/null >&2 || echo "  (ios/libs 不存在)" >&2
+echo "------" >&2
+for F in "$IOS_LIBS_DIR"/libarc-freetype.a "$IOS_LIBS_DIR"/*.framework "$IOS_LIBS_DIR"/*.xcframework; do
+  [ -e "$F" ] || continue
+  echo "  $F :" >&2
+  file "$F" 2>/dev/null >&2 || true
+  if [ -f "$F" ] && command -v lipo >/dev/null 2>&1; then
+    lipo -info "$F" 2>&1 | head -3 >&2
+  fi
+done
+echo "------" >&2
+echo "  [DIAG] ios/robovm.xml 最终内容（链接前）：" >&2
+cat "${BUILD_DIR}/Mindustry/ios/robovm.xml" 2>/dev/null >&2 || echo "  (robovm.xml 不存在)" >&2
+echo "====== [DIAG] 诊断结束 ======" >&2
+
 echo "    (C.1) 准备 Arc freetype iOS 原生静态库（不调用 Gradle :Arc:* 任务；纯文件系统 / jar 兜底，对齐 noLocalArc）" >&2
 # 搜索候选位置：直接产出的 .a 以及 jar 内部 META-INF/robovm/ios/libs/*.a
 FT_SRC=""
@@ -797,14 +814,40 @@ fi
 #     -Pbuildversion=$VER -Probovm.iosSkipSigning=true --no-daemon
 # deploy 任务内部依赖 createIPA；copyAssets 依赖 :tools:pack + copyNatives；因此整条链路
 # 的 sprite pack / freetype copy / IPA 产出 会一次性跑完，与 reference 行为完全一致。
-./gradlew "${GRADLE_ARGS[@]}" ios:incrementConfig ios:deploy
-GRADLE_RC=$?
+# 重要：用 set +e / set -e 包裹，确保 gradle 失败后脚本能继续执行诊断块（dump clang++
+# 真实错误到 stderr，否则 tail -150 只能看到 Java 堆栈而看不到 ld 错误）。
+# 同时用 tee 截获完整 Gradle 输出到临时文件，从里面提取 clang++/ld 真实错误行，
+# 打印到 stderr（出现在日志末尾，tail -150 能抓到）。
+GRADLE_OUT_LOG="$(mktemp /tmp/gradle-ios-build.XXXXXX)"
+set +e
+./gradlew "${GRADLE_ARGS[@]}" ios:incrementConfig ios:deploy 2>&1 | tee "$GRADLE_OUT_LOG"
+GRADLE_RC=${PIPESTATUS[0]}
+set -e
 
 # ========= 若 ios:deploy(createIPA) 失败：抽取 RoboVM 链接阶段 clang stderr 到日志 =========
 if [ "$GRADLE_RC" -ne 0 ]; then
   echo "===== ios:deploy (createIPA) 失败 ($GRADLE_RC)，转储 RoboVM 链接诊断 =====" >&2
+
+  # ★ 最关键：从截获的 Gradle 完整输出中提取 clang++/ld 的真实错误行 ★
+  # RoboVM 的 Executor.exec() 会把 clang++ 的 stdout/stderr 传给 logger，
+  # 这些行在 3 分钟的 Gradle 输出中间，tail -150 根本看不到。
+  # 这里从 $GRADLE_OUT_LOG 里 grep 出来，打印到 stderr（出现在日志末尾，tail -150 能抓到）。
+  echo "--- ★ clang++/ld 真实错误行（从 Gradle 输出中提取）★ ---" >&2
+  grep -iE 'error:|ld:|undefined|not found|cannot find|framework|library|symbol|architecture|file format|is not an|unsupported|linker|clang\+\+|fatal|FAILED|no such' "$GRADLE_OUT_LOG" 2>/dev/null | grep -ivE 'at org\.|at java\.|at jdk\.|at com\.sun\.|Caused by:|^\s+at ' | tail -80 >&2 || true
+
+  echo "" >&2
+  echo "--- Gradle 输出最后 40 行（非堆栈部分）---" >&2
+  # 跳过纯堆栈行，只保留有实际信息的行
+  grep -vE '^\s+at ' "$GRADLE_OUT_LOG" 2>/dev/null | tail -40 >&2 || true
+
+  echo "" >&2
+  echo "--- RoboVM 链接命令（完整 clang++ argv）---" >&2
+  # 从 Gradle 输出中提取 "Command '[" 行（包含完整 clang++ 命令行参数）
+  grep -E "Command \'" "$GRADLE_OUT_LOG" 2>/dev/null | head -5 >&2 || true
+
   TMP_ROBOVM="${BUILD_DIR}/Mindustry/ios/build/robovm.tmp"
   if [ -d "$TMP_ROBOVM" ]; then
+    echo "" >&2
     echo "--- robovm.tmp 目录结构 ---" >&2
     find "$TMP_ROBOVM" -maxdepth 3 -type f | sort | head -80 >&2 || true
     for F in "$TMP_ROBOVM/stderr" "$TMP_ROBOVM/clang_stderr" "$TMP_ROBOVM/link_stderr" \
@@ -814,7 +857,6 @@ if [ "$GRADLE_RC" -ne 0 ]; then
       echo "--- $F ---" >&2
       tail -100 "$F" >&2
     done
-    # objects0 / filelist + all .err/.stderr files as generic catch-all
     find "$TMP_ROBOVM" -type f \( -name '*.stderr' -o -name '*.err' -o -name '*stderr*' -o -name 'objects*' \) 2>/dev/null | while read -r X; do
       if [[ "$X" == *objects* ]]; then
         echo "--- (filelist sample) $X (first 30 lines) ---" >&2
@@ -825,10 +867,10 @@ if [ "$GRADLE_RC" -ne 0 ]; then
       fi
     done
   else
-    echo "(robovm.tmp 不存在 —— 失败发生在链接前的配置/打包阶段)" >&2
+    echo "(robovm.tmp 不存在)" >&2
   fi
-  # 同时搜索 ios/build 下 *.log 中含 error/ld/undef/library/not found 的行
-  echo "--- ios/build/** 日志中含 error|library|Undefined|clang++ 的最后 100 行 ---" >&2
+  echo "" >&2
+  echo "--- ios/build/** 日志中含 error|library|Undefined|clang++ 的行 ---" >&2
   find "${BUILD_DIR}/Mindustry/ios/build" -type f \( -name '*.log' -o -name '*.txt' -o -name '*.out' \) 2>/dev/null \
     | xargs -I{} grep -niHE 'error|library.*not found|Undefined symbols|file.*is not an object file|Unsupported architecture|clang' {} 2>/dev/null \
     | tail -100 >&2 || true
