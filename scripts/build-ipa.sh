@@ -565,7 +565,7 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；
          {  <frameworks>\n${inner}  </frameworks>\n$1}s;
       }
 __BUILD_IPA_PATCH_ROBOVM_XML__
-    echo "    (A.3) robovm.xml：<libs> 保持 z+libarc-freetype.a；<frameworkPaths> 只保留 libs（删除 ${user.home} 无效路径）；<frameworks> 剥离 arc（arc.framework 不存在）+ 补齐 MetalANGLEKit 等 11 项" >&2
+    echo "    (A.3) robovm.xml：<libs> 保持 z+libarc-freetype.a；<frameworkPaths> 只保留 libs（删除 \${user.home} 无效路径）；<frameworks> 剥离 arc（arc.framework 不存在）+ 补齐 MetalANGLEKit 等 11 项" >&2
   fi
 
   # ===== (C.0 2/2) 优先从依赖 jar 解 freetype 静态库（不再依赖 Arc 原生任务成功） =====
