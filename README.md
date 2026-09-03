@@ -1,6 +1,10 @@
 # Mindustry iOS IPA 自动打包（未签名版）
 
 盯着 Anuken/Mindustry 的 Releases，自动拉 tag 源码出 iOS IPA。固定**未签名**输出，省掉证书 / 描述文件 / 签名链路的复杂度。源码版本严格对齐上游 tag，跟 App Store 显示的 `8.<build>.0` 保持一致。
+<p align="center">
+  <!-- 访问统计：count.getloli.com -->
+  <img src="https://count.getloli.com/@:mindustry-ios-pack?name=%3Amindustry-ios-pack&theme=rule34&padding=7&offset=0&align=center&scale=1&pixelated=0&darkmode=auto" alt="访问量" />
+</p>
 
 - 每 6 小时定时检测（UTC 00:17 / 06:17 / 12:17 / 18:17），也可手动触发
 - 成功构建的 tag 写回 `LAST_VERSION`，下轮自动跳过，不重复占用 macOS runner
