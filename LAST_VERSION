@@ -1,3 +1,3 @@
 # 上次成功构建的 Mindustry upstream tag。由 scripts/bump-last-version.sh 在 CI 构建成功后更新。
 # 格式：单独一行 v<BUILD_VERSION>。check-version.sh 读取时跳过 # 注释行。
-v159.6
+v159.7
