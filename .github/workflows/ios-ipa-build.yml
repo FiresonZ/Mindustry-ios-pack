@@ -305,23 +305,39 @@ jobs:
           path: LAST_VERSION
           key: mindustry-ios-last-version-${{ github.run_id }}
 
-      - name: Commit LAST_VERSION back to repo (if PAT provided)
-        if: success() && github.event_name == 'schedule'
+      - name: Commit & Push LAST_VERSION back to repo
+        if: success()
         shell: bash
         env:
-          PAT: ${{ secrets.PAT_GITHUB }}
+          # 优先使用 PAT（可跨 repo 推），兜底 GITHUB_TOKEN（本仓库即可）
+          PUSH_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
         run: |
-          if [ -z "$PAT" ]; then
-            echo "PAT_GITHUB 未设置，跳过 repo 回写（cache 已更新）。"
+          if [ -z "$PUSH_TOKEN" ]; then
+            echo "WARN: 无可用 push token，跳过 repo 回写（LAST_VERSION 仅在本地缓存生效）。"
             exit 0
           fi
+          TAG="${{ needs.check-version.outputs.release_tag }}"
+          REF="${GITHUB_REF_NAME}"
+          echo "  Target ref    : ${REF}"
+          echo "  Release tag   : ${TAG}"
+          echo "  Porcelain raw : [$(git status --porcelain LAST_VERSION 2>/dev/null | tr '\n' '|')]"
+
           git config user.name  "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
-          if [ -n "$(git status --porcelain LAST_VERSION 2>/dev/null)" ]; then
-            git add LAST_VERSION
-            git commit -m "chore(version): bump LAST_VERSION to ${{ needs.check-version.outputs.release_tag }}"
-            git push "https://x-access-token:${PAT}@github.com/${GITHUB_REPOSITORY}.git" HEAD:${GITHUB_REF_NAME}
-            echo "已成功回写 LAST_VERSION"
+
+          if [ -z "$(git status --porcelain LAST_VERSION 2>/dev/null)" ]; then
+            echo "LAST_VERSION 内容未变化（与 HEAD 一致），无需重复 commit/push。"
+            exit 0
+          fi
+
+          git add LAST_VERSION
+          git commit -m "chore(version): bump LAST_VERSION to ${TAG}"
+          echo "  Committed: $(git rev-parse --short HEAD)"
+
+          # 回推主仓库
+          if git push "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${REF}"; then
+            echo "已成功 push LAST_VERSION (${TAG}) 到 ${GITHUB_REPOSITORY}@${REF}"
           else
-            echo "LAST_VERSION 无变化，无需回写。"
+            echo "::warning:: push 失败，LAST_VERSION 未回写。请检查 token 权限(contents:write)或是否有远端冲突。"
+            exit 0
           fi

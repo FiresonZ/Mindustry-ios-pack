@@ -1,0 +1,231 @@
+Run chmod +x ./scripts/bump-last-version.sh
+  chmod +x ./scripts/bump-last-version.sh
+  ./scripts/bump-last-version.sh "v159.7"
+  shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+  env:
+    STATE_FILE: /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack/LAST_VERSION
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+    JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+    MAVEN_ARGS: -ntp
+    GRADLE_ACTION_ID: gradle/actions/setup-gradle
+    GRADLE_USER_HOME: /Users/runner/.gradle
+    GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+    DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+    DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+    GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+已记录 LAST_VERSION = v159.7
+已自动 commit LAST_VERSION 更新
+1s
+Run actions/cache/save@v6
+  with:
+    path: LAST_VERSION
+    key: mindustry-ios-last-version-33751540631
+    enableCrossOsArchive: false
+  env:
+    STATE_FILE: /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack/LAST_VERSION
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+    JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+    MAVEN_ARGS: -ntp
+    GRADLE_ACTION_ID: gradle/actions/setup-gradle
+    GRADLE_USER_HOME: /Users/runner/.gradle
+    GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+    DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+    DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+    GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+Sent 216 of 216 (100.0%), 0.0 MBs/sec
+Cache saved with key: mindustry-ios-last-version-33751540631
+0s
+9s
+Post job cleanup.
+In post-action step
+Enhanced Caching: This build is using the proprietary 'gradle-actions-caching' provider for optimized caching support. See https://github.com/gradle/actions/blob/main/DISTRIBUTION.md for terms of use and opt-out instructions.
+Stopping Gradle daemons
+  Stopping Gradle daemons for /Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1
+  /Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle --stop
+  No Gradle daemons are running.
+Performing cache cleanup
+  Removed 16 files excluded from the cache (e.g. locks)
+  Removing Gradle User Home content that was not used during the build
+  Removed 139 inactive cross-version entries
+  Removed 118 inactive version-scoped entries
+  Active Gradle versions: 9.3.1
+Caching Gradle state
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  Sent 184602 of 184602 (100.0%), 2.9 MBs/sec
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  Saved cache entry with key gradle-instrumented-jars-v2-1089a8f0b4978b6c79131c07ef5fe1a9 from /Users/runner/.gradle/caches/jars-*/*/ in 325ms
+  Sent 5267541 of 5267541 (100.0%), 20.3 MBs/sec
+  Sent 286520 of 286520 (100.0%), 2.5 MBs/sec
+  Saved cache entry with key gradle-build-cache-v2-7384cb8c1bd64a5f2c8c753ea605be2e from /Users/runner/.gradle/caches/build-cache-*/* in 461ms
+  Saved cache entry with key gradle-groovy-dsl-v2-99002f52e3aaf45db097725b2afc7207 from /Users/runner/.gradle/caches/*/groovy-dsl/*/ in 451ms
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  Sent 8019852 of 209346444 (3.8%), 7.5 MBs/sec
+  Sent 75128716 of 209346444 (35.9%), 35.5 MBs/sec
+  Sent 209346444 of 209346444 (100.0%), 84.6 MBs/sec
+  Saved cache entry with key gradle-dependencies-v2-eae36cafbf1410c765cda818c141ba44 from /Users/runner/.gradle/caches/modules-*/files-*/*/*/*/*/ in 3801ms
+  Sent 72437373 of 72437373 (100.0%), 68.9 MBs/sec
+  Saved cache entry with key gradle-transforms-v2-24b6dc0e67c85d3f6a222d165609c3e4 from /Users/runner/.gradle/caches/transforms-4/*/,/Users/runner/.gradle/caches/*/transforms/*/ in 4552ms
+  /opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+  Sent 3379690 of 3379690 (100.0%), 32.2 MBs/sec
+  Saved cache entry with key gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-be4cc2f3bc37c1042bef688b75dd51e576e2a11d from /Users/runner/.gradle/caches,/Users/runner/.gradle/notifications,/Users/runner/.gradle/.setup-gradle in 416ms
+Generating Job Summary
+  
+  
+  <table>
+      <tr>
+          <th>Gradle Root Project</th>
+          <th>Requested Tasks</th>
+          <th>Gradle Version</th>
+          <th>Build Outcome</th>
+          <th>Build&nbsp;Scan®</th>
+      </tr>
+      <tr>
+          <td>Mindustry</td>
+          <td>:tools:pack</td>
+          <td align='center'>9.3.1</td>
+          <td align='center'>:white_check_mark:</td>
+          <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+      </tr>
+      <tr>
+          <td>Mindustry</td>
+          <td>:core:preGen</td>
+          <td align='center'>9.3.1</td>
+          <td align='center'>:white_check_mark:</td>
+          <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+      </tr>
+      <tr>
+          <td>Mindustry</td>
+          <td>ios:incrementConfig ios:deploy</td>
+          <td align='center'>9.3.1</td>
+          <td align='center'>:white_check_mark:</td>
+          <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+      </tr>
+  </table>
+      
+  ============================
+  <h4>Gradle State Caching - ⚡ Enhanced</h4>
+  
+  **[Enhanced Caching](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#enhanced-caching)** uses the proprietary `gradle-actions-caching` provider. See [DISTRIBUTION.md](https://github.com/gradle/actions/blob/main/DISTRIBUTION.md) for terms of use and opt-out instructions.
+  
+  <details>
+  <summary>Entries: 7 restored (425Mb), 6 saved (277Mb) - Expand for more details</summary>
+  
+  [Cache was enabled](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#caching-build-state-between-jobs) — Gradle User Home was restored from the cache and saved for use by subsequent jobs.
+  
+  [Cache cleanup](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#configuring-cache-cleanup) purged stale files from Gradle User Home before saving.
+  
+  <table>
+      <tr><td></td><th>Count</th><th>Total Size (Mb)</th><th>Total Time (ms)</th></tr>
+      <tr><td>Entries Restored</td>
+          <td>7</td>
+          <td>425</td>
+          <td>13636</td>
+      </tr>
+      <tr><td>Entries Saved</td>
+          <td>6</td>
+          <td>277</td>
+          <td>10006</td>
+      </tr>
+  </table>
+  
+  <pre>
+  Entry: Gradle User Home
+      Requested Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-be4cc2f3bc37c1042bef688b75dd51e576e2a11d
+      Restored  Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-0818ff91749ebe8e062f4559c44ccdada2044cc1
+                Size: 3 MB (3385883 B)
+                Time: 428 ms
+                (Entry restored: partial match found)
+      Saved     Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-be4cc2f3bc37c1042bef688b75dd51e576e2a11d
+                Size: 3 MB (3379690 B)
+                Time: 416 ms
+                (Entry saved)
+  ---
+  Entry: wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks
+      Requested Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+      Restored  Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+                Size: 130 MB (136344051 B)
+                Time: 3335 ms
+                (Entry restored: exact match found)
+      Saved     Key : 
+                Size: 
+                Time: 
+                (Entry not saved: contents unchanged)
+  ---
+  Entry: dependencies
+      Requested Key : gradle-dependencies-v2-c765dca4d0051826bcdf151dd8f9b16d
+      Restored  Key : gradle-dependencies-v2-c765dca4d0051826bcdf151dd8f9b16d
+                Size: 205 MB (214605133 B)
+                Time: 3610 ms
+                (Entry restored: exact match found)
+      Saved     Key : gradle-dependencies-v2-eae36cafbf1410c765cda818c141ba44
+                Size: 200 MB (209346444 B)
+                Time: 3801 ms
+                (Entry saved)
+  ---
+  Entry: instrumented-jars
+      Requested Key : gradle-instrumented-jars-v2-8077baed4ce15b686f264178dc35a166
+      Restored  Key : gradle-instrumented-jars-v2-8077baed4ce15b686f264178dc35a166
+                Size: 0 MB (263795 B)
+                Time: 698 ms
+                (Entry restored: exact match found)
+      Saved     Key : gradle-instrumented-jars-v2-1089a8f0b4978b6c79131c07ef5fe1a9
+                Size: 0 MB (184602 B)
+                Time: 325 ms
+                (Entry saved)
+  ---
+  Entry: build-cache
+      Requested Key : gradle-build-cache-v2-6ad974a3f7a19fdc7f8726ce7e54fd3e
+      Restored  Key : gradle-build-cache-v2-6ad974a3f7a19fdc7f8726ce7e54fd3e
+                Size: 12 MB (12095042 B)
+                Time: 998 ms
+                (Entry restored: exact match found)
+      Saved     Key : gradle-build-cache-v2-7384cb8c1bd64a5f2c8c753ea605be2e
+                Size: 5 MB (5267541 B)
+                Time: 461 ms
+                (Entry saved)
+  ---
+  Entry: groovy-dsl
+      Requested Key : gradle-groovy-dsl-v2-4d3e7b902d7616b8c64420e8e26bd0fc
+      Restored  Key : gradle-groovy-dsl-v2-4d3e7b902d7616b8c64420e8e26bd0fc
+                Size: 0 MB (438444 B)
+                Time: 749 ms
+                (Entry restored: exact match found)
+      Saved     Key : gradle-groovy-dsl-v2-99002f52e3aaf45db097725b2afc7207
+                Size: 0 MB (286520 B)
+                Time: 451 ms
+                (Entry saved)
+  ---
+  Entry: transforms
+      Requested Key : gradle-transforms-v2-2cf70de0c88431f71c08942109dace88
+      Restored  Key : gradle-transforms-v2-2cf70de0c88431f71c08942109dace88
+                Size: 74 MB (78100849 B)
+                Time: 3818 ms
+                (Entry restored: exact match found)
+      Saved     Key : gradle-transforms-v2-24b6dc0e67c85d3f6a222d165609c3e4
+                Size: 69 MB (72437373 B)
+                Time: 4552 ms
+                (Entry saved)
+  </pre>
+  </details>
+  
+Completed post-action step
+0s
+Post job cleanup.
+0s
+Post job cleanup.
+/opt/homebrew/bin/git version
+git version 2.54.0
+Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/50c5ce8f-d876-4d3d-aea8-77c0b840b789/.gitconfig'
+Temporarily overriding HOME='/Users/runner/work/_temp/50c5ce8f-d876-4d3d-aea8-77c0b840b789' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/Mindustry-ios-pack/Mindustry-ios-pack
+Removing SSH command configuration
+/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+fatal: No url found for submodule path 'Mindustry' in .gitmodules
+Warning: The process '/opt/homebrew/bin/git' failed with exit code 128

@@ -63,9 +63,11 @@ fi
 echo "==> 最新 GitHub Release: ${RELEASE_TAG} (build=${BUILD_VERSION}, build_int=${BUILD_INT}, display=${DISPLAY_VERSION})" >&2
 
 # 读取上次记录的版本
+# 注意：LAST_VERSION 文件允许以 # 开头的注释行（bump-last-version.sh 新格式保留了注释）。
+# 必须跳过注释行再去空白，否则 "注释+v146" 会被拼成一串导致对比永不命中。
 LAST_TAG=""
 if [ -f "$STATE_FILE" ]; then
-  LAST_TAG=$(tr -d '[:space:]' < "$STATE_FILE")
+  LAST_TAG=$(grep -v '^\s*#' "$STATE_FILE" | tr -d '[:space:]' 2>/dev/null || true)
   echo "==> 上次构建版本: ${LAST_TAG}" >&2
 fi
 
