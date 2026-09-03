@@ -2,7 +2,7 @@
 
 <p align="center">
   <!-- 访问统计：count.getloli.com -->
-  <img src="https://count.getloli.com/get/@:mindustry-ios-pack?theme=rule34" alt="访问量" />
+  <img src="https://count.getloli.com/@:mindustry-ios-pack?name=%3Amindustry-ios-pack&theme=rule34&padding=7&offset=0&align=center&scale=1&pixelated=0&darkmode=auto" alt="访问量" />
 </p>
 
 盯着 Anuken/Mindustry 的 Releases，自动拉 tag 源码出 iOS IPA，**不用苹果开发者账号、不用证书、不用描述文件**，装好 TrollStore 往设备里扔就能玩。源码版本号跟 App Store 那套对齐（`8.<build>.0`），不会打包出奇奇怪怪的版本。
