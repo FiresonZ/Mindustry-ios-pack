@@ -15,6 +15,7 @@
 #   APP_STORE_VERSION=8.146.0  (如果检测到)
 #
 # 状态文件： LAST_VERSION (记录上次构建的 tag)
+# 注意：本脚本无调试输出，所有 stderr 信息均为正常流程日志。
 # ---------------------------------------------------------------
 set -euo pipefail
 
@@ -46,11 +47,8 @@ if [ -z "$RELEASE_TAG" ]; then
   exit 1
 fi
 
-# 提取构建版本号（去掉前缀 v）
-# 兼容两种 tag 格式：v146 (整数) 与 v159.7 (带小数的补丁版)
+# 提取构建版本号（去掉前缀 v），兼容整数（v146）与小数（v159.7）
 BUILD_VERSION="${RELEASE_TAG#v}"
-
-# 计算整数主版本号（去掉小数部分，供 Gradle 中需要 .toInteger() 的场景兜底）
 BUILD_INT="${BUILD_VERSION%%.*}"
 
 # 根据是否含小数推导 display 版本（3 段式，符合苹果 CFBundleShortVersionString 规范）
@@ -62,9 +60,7 @@ fi
 
 echo "==> 最新 GitHub Release: ${RELEASE_TAG} (build=${BUILD_VERSION}, build_int=${BUILD_INT}, display=${DISPLAY_VERSION})" >&2
 
-# 读取上次记录的版本
-# 注意：LAST_VERSION 文件允许以 # 开头的注释行（bump-last-version.sh 新格式保留了注释）。
-# 必须跳过注释行再去空白，否则 "注释+v146" 会被拼成一串导致对比永不命中。
+# 读取上次记录的版本（跳过注释行）
 LAST_TAG=""
 if [ -f "$STATE_FILE" ]; then
   LAST_TAG=$(grep -v '^\s*#' "$STATE_FILE" | tr -d '[:space:]' 2>/dev/null || true)
@@ -94,7 +90,6 @@ if d.get('resultCount',0)>0:
 " 2>/dev/null || true)
     if [ -n "$APP_STORE_VERSION" ]; then
       echo "==> App Store 当前显示版本: ${APP_STORE_VERSION}" >&2
-      # 验证版本号匹配规则: 应为 DISPLAY_VERSION（小数版 -> 8.159.7，整数版 -> 8.146.0）
       EXPECTED_APPVER="${DISPLAY_VERSION}"
       if [ "$APP_STORE_VERSION" != "$EXPECTED_APPVER" ]; then
         echo "WARN: App Store版本($APP_STORE_VERSION) 与预期版本($EXPECTED_APPVER)不一致" >&2
@@ -103,7 +98,7 @@ if d.get('resultCount',0)>0:
   fi
 fi
 
-# 写入结果到 stdout（供 Actions 读取）
+# 输出结果变量（供 CI 读取）
 echo "RELEASE_TAG=${RELEASE_TAG}"
 echo "BUILD_VERSION=${BUILD_VERSION}"
 echo "BUILD_INT=${BUILD_INT}"
@@ -111,5 +106,4 @@ echo "DISPLAY_VERSION=${DISPLAY_VERSION}"
 echo "APP_STORE_VERSION=${APP_STORE_VERSION}"
 echo "NEEDS_BUILD=${NEEDS_BUILD}"
 
-# 如果需要构建则更新状态文件（注意：构建成功后才写，此处只输出 NEEDS_BUILD 判断）
-# 实际写入由 CI 在 build success 步骤完成
+# 注意：实际更新状态文件由构建成功后的步骤完成，此处仅作判断。
