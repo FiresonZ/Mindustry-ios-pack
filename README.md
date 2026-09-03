@@ -6,7 +6,7 @@
   <img src="https://count.getloli.com/@:mindustry-ios-pack?name=%3Amindustry-ios-pack&theme=rule34&padding=7&offset=0&align=center&scale=1&pixelated=0&darkmode=auto" alt="访问量" />
 </p>
 
-- 每 6 小时定时检测（UTC 00:17 / 06:17 / 12:17 / 18:17），也可手动触发
+- 每日0点自动构建，也可手动触发
 - 成功构建的 tag 写回 `LAST_VERSION`，下轮自动跳过，不重复占用 macOS runner
 - 产物同时发 Artifacts（保留 90 天）+ GitHub Release（tag `ios-v<构建号>`）
 
@@ -20,7 +20,7 @@
 
 | 方式 | 怎么用 |
 |---|---|
-| 自动 | 什么都不用做；schedule 每 6h 查 Anuken/Mindustry 最新 release，比 `LAST_VERSION` 新就出包 |
+| 自动 | 什么都不用做；schedule 每日0点查 Anuken/Mindustry 最新 release，比 `LAST_VERSION` 新就出包 |
 | 手动 | Actions → `Mindustry iOS IPA Auto Build` → Run workflow：<br>• `build_version`：如 `146`（会严格校验 `v146` tag 在 Anuken/Mindustry 存在，不存在立即终止）；留空=用最新 release<br>• `force_build`：勾选则无视 `LAST_VERSION`，强制重打 |
 
 **产物位置：**
