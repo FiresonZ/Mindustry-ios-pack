@@ -461,28 +461,35 @@ GRADLE_ARGS=(
 #   MetalANGLEKit 附加后出现 includeBuild 与 jar 内原生 META-INF 搜索路径的冲突。
 echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；并传入 -PnoLocalArc 与参考仓库保持一致" >&2
 
-  # ===== (C.0) RoboVM 配置修正：保留原始 <libs> 结构 + 附加 libs 到 frameworkPaths 搜索基准 =====
+  # ===== (A.3) RoboVM 配置修正：<libs> 保留 + <frameworkPaths> 精简 + <frameworks> 剥离 arc =====
   # 教训：RoboVM 2.3.24 不接受 <lib variant="release|debug">libs/libarc-freetype.a</lib>，
   # 它的 PlatformVariant 枚举只允许在特定元素上用，直接写会在 Config read 阶段抛
-  # IllegalArgumentException: No enum constant org.robovm.compiler.config.PlatformVariant.release
-  # （参见新上传日志 L116）。Anuken/Mindustry v159.7 上游 robovm.xml 本身也是纯文本
+  # IllegalArgumentException: No enum constant org.robovm.compiler.config.PlatformVariant.release。
+  # Anuken/Mindustry v159.7 上游 robovm.xml 本身也是纯文本
   # <lib>libs/libarc-freetype.a</lib>，没有任何 variant 属性。
-  # 真正让 RoboVM 找到该文件的办法：把 Mindustry/ios/libs 目录加入 RoboVM 的 frameworkPaths，
-  # 并确保 **shell 级**在 createIPA 运行前把 libarc-freetype.a 物理落到 ios/libs（C.0 早注入
-  # + C.1 兜底 + 依赖）。这里对 xml 的改动仅限无风险、属性合法的三类改动：
-  #   1) 仅当 xml 完全没有 <lib>libs/libarc-freetype.a</lib> 时，才插入一条纯 <lib>（通常上游已存在）；
-  #   2) 在 <frameworkPaths> 里追加一条 <path>libs</path>；
-  #   3) 完全缺失 <frameworkPaths> 时才兜底建一个。
+  # 关键修正（针对 ld: framework 'arc' not found）：
+  #   1) 剥离 <framework>arc</framework>——arc.framework 不存在于 robovm-dist/Arc/MetalANGLEKit
+  #      的任何位置（详见 perl 注释）。上游 v159.7 自带该条目，需主动删除。
+  #   2) <frameworkPaths> 删除 ${user.home}/.m2/.../arm64 路径——RoboVM 2.3.24 实测未展开
+  #      ${user.home}（clang -F 参数含字面 ${user.home}），且该目录只含 .a 无 .framework。
+  #      只保留 <path>libs</path> 作为 xcframework 搜索基准。
+  #   3) <libs> 保持上游 z + libs/libarc-freetype.a 结构不变。
   IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
   if [ -f "$IOS_ROBOVM_XML" ]; then
     perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
       use strict; use warnings;
-      # 严格镜像 VincentZyu233/Mindustry-for-ios master/ios/robovm.xml 的 <libs>/<frameworkPaths>：
-      #   <libs> 中仅一条 <lib>libs/libarc-freetype.a</lib>（绝对不能写 variant 等未知属性）
-      #   <frameworkPaths> = <path>libs</path> + <path>${user.home}/.m2/.../robovm-dist/2.3.24/.../arm64</path>
-      # 任何不在参考仓库里的 XML 元素都不允许追加（就是过去几轮 PlatformVariant.release 报错的根因）。
+      # 参考 VincentZyu233/Mindustry-for-ios 的 <libs>/<frameworkPaths>/<frameworks> 结构。
+      # 关键修正（根因 ld: framework 'arc' not found）：
+      #   1) <framework>arc</framework> 是上游遗留的错误声明——arc.framework 不存在于
+      #      robovm-dist 2.3.24（仅含 .a）、Arc 仓库、MetalANGLEKit zip、backend-robovm jar
+      #      的任何位置。Anuken/Arc 引擎以 Java 字节码经 classpath 链接，不是 iOS framework。
+      #      VincentZyu v157.4 成功构建的 robovm.xml 也声明了它，但那可能是 ld 版本差异
+      #      或缓存导致未报错。Xcode 15.4 的 ld 将其视为硬错误。因此主动剥离该条目。
+      #   2) <frameworkPaths> 中 ${user.home}/.m2/.../arm64 路径：RoboVM 2.3.24 的
+      #      PlatformFilter(SystemFilter) 理论上能解析 ${user.home}，但实测 clang -F 参数中
+      #      出现字面 ${user.home}（未展开）。且该路径指向的 robovm-dist arm64 目录只含
+      #      .a 静态库、不含任何 .framework，即使解析成功也无用。故只保留 <path>libs</path>。
       my $lib_entry = qq{<lib>libs/libarc-freetype.a</lib>};
-      my $vm_arm64_home = qq{\${user.home}/.m2/repository/com/mobidevelop/robovm/robovm-dist/2.3.24/unpacked/robovm-2.3.24/lib/vm/ios/arm64};
 
       # ---- <libs> 块：保持参考仓库结构 ----
       if (m{<libs>[\s\S]*?</libs>}) {
@@ -503,31 +510,30 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；
          {  <libs>\n    <lib>z</lib>\n    $lib_entry\n  </libs>\n$1}s;
       }
 
-      # ---- <frameworkPaths>：严格和参考仓库一致，只写 2 条 path ----
+      # ---- <frameworkPaths>：只保留 <path>libs</path> ----
+      # ${user.home}/.m2/.../arm64 路径已删除（见上方注释 2）。ios/libs 是 MetalANGLEKit 等
+      # xcframework 的物理位置，RoboVM 会自动发现 xcframework 子目录，但 <path>libs</path>
+      # 确保 ld -F 搜索基准包含 ios/libs，与参考仓库保持一致。
       my $p1 = qq{<path>libs</path>};
-      my $p2 = qq{<path>$vm_arm64_home</path>};
       if (m{<frameworkPaths>[\s\S]*?</frameworkPaths>}) {
         s{(<frameworkPaths>)([\s\S]*?)(</frameworkPaths>)}{
           my ($open, $body, $close) = ($1, $2, $3);
-          for my $need (($p1, $p2)) {
-            if (index($body, $need) < 0) {
-              $body .= "    $need\n  ";
-            }
+          # 主动删除所有 ${user.home} 路径条目（上游/参考仓库可能残留）
+          $body =~ s{[ \t]*<path>[^\n]*user\.home[^\n]*</path>\n?}{}gi;
+          if (index($body, $p1) < 0) {
+            $body .= "    $p1\n  ";
           }
           $open . $body . $close;
         }sge;
       } else {
         s{(</(?:config|robovm)>)}
-         {  <frameworkPaths>\n    $p1\n    $p2\n  </frameworkPaths>\n$1}s;
+         {  <frameworkPaths>\n    $p1\n  </frameworkPaths>\n$1}s;
       }
 
-      # ---- <frameworks>：严格镜像参考仓库，确保 MetalANGLEKit/libGLESv2/libEGL/libfeature_support 存在 ----
-      # 参考顺序（前 -> 后）: arc, UIKit, MetalANGLEKit, libGLESv2, libEGL, libfeature_support,
-      #                       Metal, QuartzCore, CoreGraphics, CoreAudio, AudioToolbox, AVFoundation
-      # 做法：先确保 <frameworks> 存在；再按 reference 顺序保证必须的 4 个不缺失；同时保留原有
-      # 未被覆盖的框架（arc/UIKit 通常上游已有）保持不变。
+      # ---- <frameworks>：确保 MetalANGLEKit/libGLESv2/libEGL/libfeature_support 存在，剥离 arc ----
+      # arc 已从 must_frameworks 移除（见上方注释 1）。这里还主动从 XML 中删除
+      # <framework>arc</framework> 条目，因为上游 v159.7 robovm.xml 自带该条目。
       my @must_frameworks = (
-        'arc',
         'UIKit',
         'MetalANGLEKit',
         'libGLESv2',
@@ -543,6 +549,8 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；
       if (m{<frameworks>[\s\S]*?</frameworks>}) {
         s{(<frameworks>)([\s\S]*?)(</frameworks>)}{
           my ($open, $body, $close) = ($1, $2, $3);
+          # 主动剥离 <framework>arc</framework>（上游遗留，arc.framework 不存在）
+          $body =~ s{[ \t]*<framework>\s*arc\s*</framework>\n?}{}gi;
           for my $fw_name (@must_frameworks) {
             my $need_entry = qq{<framework>$fw_name</framework>};
             if ($body !~ m{<framework>\s*\Q$fw_name\E\s*</framework>}) {
@@ -557,7 +565,7 @@ echo "    RoboVM 构建将设置 iosSkipSigning=true，跳过 codesign 阶段；
          {  <frameworks>\n${inner}  </frameworks>\n$1}s;
       }
 __BUILD_IPA_PATCH_ROBOVM_XML__
-    echo "    (A.3) robovm.xml：严格镜像 VincentZyu 参考仓库 <libs>+<frameworkPaths>+<frameworks> 三部分；MetalANGLEKit/libGLESv2/libEGL/libfeature_support 已补齐；不写 variant 等未知属性" >&2
+    echo "    (A.3) robovm.xml：<libs> 保持 z+libarc-freetype.a；<frameworkPaths> 只保留 libs（删除 ${user.home} 无效路径）；<frameworks> 剥离 arc（arc.framework 不存在）+ 补齐 MetalANGLEKit 等 11 项" >&2
   fi
 
   # ===== (C.0 2/2) 优先从依赖 jar 解 freetype 静态库（不再依赖 Arc 原生任务成功） =====
@@ -717,6 +725,12 @@ done
 echo "------" >&2
 echo "  [DIAG] ios/robovm.xml 最终内容（链接前）：" >&2
 cat "${BUILD_DIR}/Mindustry/ios/robovm.xml" 2>/dev/null >&2 || echo "  (robovm.xml 不存在)" >&2
+echo "------" >&2
+# 验证关键修正是否生效
+ARC_LEFT=$(grep -c '<framework>arc</framework>' "${BUILD_DIR}/Mindustry/ios/robovm.xml" 2>/dev/null || echo 0)
+USERHOME_LEFT=$(grep -c 'user\.home' "${BUILD_DIR}/Mindustry/ios/robovm.xml" 2>/dev/null || echo 0)
+echo "  [VERIFY] <framework>arc</framework> 残留条目数: ${ARC_LEFT} (应为 0)" >&2
+echo "  [VERIFY] \${user.home} 残留条目数: ${USERHOME_LEFT} (应为 0)" >&2
 echo "====== [DIAG] 诊断结束 ======" >&2
 
 echo "    (C.1) 准备 Arc freetype iOS 原生静态库（不调用 Gradle :Arc:* 任务；纯文件系统 / jar 兜底，对齐 noLocalArc）" >&2
