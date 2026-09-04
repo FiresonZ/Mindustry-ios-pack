@@ -9,6 +9,7 @@
 - 每日0点自动构建，也可手动触发
 - 成功构建的 tag 写回 `LAST_VERSION`，下轮自动跳过，不重复占用 macOS runner
 - 产物同时发 Artifacts（保留 90 天）+ GitHub Release（tag `ios-v<构建号>`）
+- **零密钥配置**：上传 Release 与 `LAST_VERSION` 回写都靠 GitHub 自动注入的 `GITHUB_TOKEN`（已声明 `contents: write` 权限），无需手动创建任何 `PAT` / Secrets。
 
 协议：GPLv3（同上游 Mindustry），见 [`LICENSE`](./LICENSE)。
 
@@ -89,7 +90,7 @@
                 ┌──────────────────┐
                 │ bump-last-version│
                 │  - 写 LAST_VERSION│
-                │  - git push 回仓库│ (依赖 contents:write 权限)
+                │  - git push 回仓库│ (自动 GITHUB_TOKEN，无需 PAT)
                 └──────────────────┘
 ```
 
@@ -103,6 +104,17 @@
    - 确保 `MetalANGLEKit`、`libGLESv2`、`libEGL`、`libfeature_support` 等 11 个 framework 声明齐全
 4. **MetalANGLEKit + freetype 静态库**（C 阶段）：镜像解压到 `ios/libs`，XCFramework 由 RoboVM ResolvedLocations 自动展开；`libarc-freetype.a` 优先从 Arc 物理目录 cp，兜底从依赖 jar 的 `META-INF/robovm/ios/libs` 解。
 5. **`-PnoLocalArc`**：禁用 Gradle 复合构建的 `includeBuild("../Arc")`，避免 `:Arc:*` 任务在 `DefaultIncludedBuildTaskGraph` 上报「未知子项目」。
+
+---
+
+## 零密钥配置（无需创建 Secret）
+
+很多仓库为了让 CI 发 Release / 提交文件，会要求配一个 Personal Access Token（PAT）。**本项目不需要**：
+
+- 工作流顶部声明了 `permissions: contents: write`，GitHub 会给该 run 自动注入一个只读/可写的 `GITHUB_TOKEN`。
+- `softprops/action-gh-release` 上传 IPA 到 Release，以及 `LAST_VERSION` 的 commit / push，都直接使用这个自动 token，开箱即用。
+
+所以 **Repository → Settings → Secrets 一个都不用配**。唯一的注意点：用 `GITHUB_TOKEN` 做的 commit 不会再次触发 CI（对 `LAST_VERSION` 回写无影响）。
 
 ---
 
