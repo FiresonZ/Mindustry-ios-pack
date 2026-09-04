@@ -55,6 +55,7 @@
 ├── scripts/
 │   ├── check-version.sh                   查最新 tag / 对比 LAST_VERSION / 输出 NEEDS_BUILD、RELEASE_TAG 等
 │   ├── build-ipa.sh                       clone Mindustry+Arc、补丁 build.gradle 与 robovm.xml、解 MetalANGLEKit、执行 ios:incrementConfig + ios:deploy
+│   ├── create-release.sh                  计算 IPA 大小/SHA256 并生成 RELEASE_NOTES.md（Release 排版）
 │   └── bump-last-version.sh               构建成功后写 LAST_VERSION（含注释头）；不做 git commit，交给 workflow 统一 push
 ├── LAST_VERSION                           上次成功构建的 tag，如 `v159.7`（# 行为注释，脚本自动跳过）
 ├── LICENSE                                GPLv3
@@ -89,7 +90,7 @@
                 ┌──────────────────┐
                 │ bump-last-version│
                 │  - 写 LAST_VERSION│
-                │  - git push 回仓库│ (依赖 contents:write 权限)
+                │  - git push 回仓库│ (contents:write 权限)
                 └──────────────────┘
 ```
 

@@ -12,8 +12,8 @@ name: Mindustry iOS IPA Auto Build (Unsigned / TrollStore)
 #   CFBundleVersion            = <BUILD_VERSION>
 #   源码 tag                   = v<BUILD_VERSION>
 #
-# Repository Secrets（可选）：
-#   PAT_GITHUB  Personal Access Token，用于 schedule 成功后自动回写 LAST_VERSION
+# Repository Secrets：无。上传 IPA 到 Release 与回写 LAST_VERSION 均用 GitHub 自动注入的 GITHUB_TOKEN
+#   （见下方 permissions.contents: write；softprops/action-gh-release 默认读取该 token）
 #
 # 说明：本工作流默认生成 **未签名 IPA**，无需 Apple 开发者账号 / 证书 / 描述文件。
 #       使用 TrollStore（或 AltStore / Sideloadly 等）对 IPA 进行自签安装即可运行。
@@ -79,7 +79,7 @@ jobs:
         id: check
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./scripts/check-version.sh
           set +e
@@ -100,7 +100,7 @@ jobs:
         id: decide
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 手动指定 build_version
           MANUAL="${{ github.event.inputs.build_version }}"
@@ -257,35 +257,36 @@ jobs:
           if-no-files-found: error
 
       # =========================================================
-      #  创建 GitHub Release（仅当非手动 / 非 force）
+      #  生成 Release notes（排版与上游参考仓库统一） + 创建 GitHub Release
       # =========================================================
+      - name: Compose release data & notes
+        if: success() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_build != 'true'))
+        id: notes
+        shell: bash
+        env:
+          RELEASE_ASSET_DIR: ./dist
+          RELEASE_TAG:       ios-${{ needs.check-version.outputs.release_tag }}
+          DISPLAY_VERSION:   ${{ needs.check-version.outputs.display_ver }}
+          BUILD_VERSION:     ${{ needs.check-version.outputs.build_version }}
+        run: |
+          chmod +x ./scripts/create-release.sh
+          ./scripts/create-release.sh
+
       - name: Create GitHub Release
         if: success() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.force_build != 'true'))
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ios-${{ needs.check-version.outputs.release_tag }}
-          name: Mindustry iOS IPA ${{ needs.check-version.outputs.display_ver }} (${{ needs.check-version.outputs.release_tag }})
-          body: |
-            # Mindustry iOS IPA
-
-            | 项目 | 值 |
-            | --- | --- |
-            | Mindustry Release | [${{ needs.check-version.outputs.release_tag }}](https://github.com/Anuken/Mindustry/releases/tag/${{ needs.check-version.outputs.release_tag }}) |
-            | Build Version | `${{ needs.check-version.outputs.build_version }}` |
-            | CFBundleShortVersionString | `${{ needs.check-version.outputs.display_ver }}` |
-            | CFBundleVersion | `${{ needs.check-version.outputs.build_version }}` |
-            | Upstream Commit URL | https://github.com/Anuken/Mindustry/tree/${{ needs.check-version.outputs.release_tag }} |
-
-            > **安装方式**：本 IPA 为**未签名**版本，需通过以下方式之一安装到真机：
-            > - **TrollStore（推荐）**：直接在 TrollStore 中打开 IPA 安装即可，无需再签名
-            > - **AltStore / Sideloadly**：侧载自签安装（7 天证书限制，付费开发者可一年）
+          name: ${{ steps.notes.outputs.release_name }}
+          body_path: ./RELEASE_NOTES.md
           files: |
             dist/*.ipa
             dist/*.meta.txt
           fail_on_unmatched_files: true
           generate_release_notes: false
+        # GITHUB_TOKEN 由 GitHub 自动注入（permissions.contents: write），无需手动创建密钥
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # =========================================================
       #  更新 LAST_VERSION（写入缓存 + 回写仓库）
@@ -308,8 +309,8 @@ jobs:
         if: success()
         shell: bash
         env:
-          # 优先使用 PAT（可跨 repo 推），兜底 GITHUB_TOKEN（本仓库即可）
-          PUSH_TOKEN: ${{ secrets.PAT_GITHUB || secrets.GITHUB_TOKEN }}
+          # GitHub 自动注入的 GITHUB_TOKEN 已具备 contents:write，可直接回写本仓库
+          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -z "$PUSH_TOKEN" ]; then
             echo "WARN: 无可用 push token，跳过 repo 回写（LAST_VERSION 仅在本地缓存生效）。"
