@@ -1,6 +1,21 @@
-# Mindustry iOS IPA 自动打包（未签名版）
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Anuken/Mindustry/master/core/assets-raw/sprites/ui/logo.png" alt="Mindustry" width="480"/>
+</p>
 
-盯着 Anuken/Mindustry 的 Releases，自动拉 tag 源码出 iOS IPA。固定**未签名**输出，省掉证书 / 描述文件 / 签名链路的复杂度。源码版本严格对齐上游 tag，跟 App Store 显示的 `8.<build>.0` 保持一致。
+<p align="center">
+  [![Build Status](https://github.com/FiresonZ/mindustry-ios-builder/actions/workflows/ios-ipa-build.yml/badge.svg)](https://github.com/FiresonZ/mindustry-ios-builder/actions/workflows/ios-ipa-build.yml)
+  [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+  [![Mindustry Upstream](https://img.shields.io/github/v/release/Anuken/Mindustry?label=Mindustry%20Upstream&color=3a8a5e)](https://github.com/Anuken/Mindustry/releases/latest)
+</p>
+
+**Mindustry iOS 未签名 IPA 自动构建器** —— 盯着 [Anuken/Mindustry](https://github.com/Anuken/Mindustry) 的 Releases，自动拉 tag 源码出 iOS IPA。固定**未签名**输出，省掉证书 / 描述文件 / 签名链路的复杂度。源码版本严格对齐上游 tag，跟 App Store 显示的 `8.<build>.0` 保持一致。
+
+<p align="center">
+  _[Releases](https://github.com/FiresonZ/mindustry-ios-builder/releases)_ ·
+  _[Actions](https://github.com/FiresonZ/mindustry-ios-builder/actions)_ ·
+  _[上游仓库](https://github.com/Anuken/Mindustry)_
+</p>
+
 <p align="center">
   <!-- 访问统计：count.getloli.com -->
   <img src="https://count.getloli.com/@:mindustry-ios-pack?name=%3Amindustry-ios-pack&theme=rule34&padding=7&offset=0&align=center&scale=1&pixelated=0&darkmode=auto" alt="访问量" />
@@ -21,7 +36,7 @@
 | 方式 | 怎么用 |
 |---|---|
 | 自动 | 什么都不用做；schedule 每日0点查 Anuken/Mindustry 最新 release，比 `LAST_VERSION` 新就出包 |
-| 手动 | Actions → `Mindustry iOS IPA Auto Build` → Run workflow：<br>• `build_version`：如 `146`（会严格校验 `v146` tag 在 Anuken/Mindustry 存在，不存在立即终止）；留空=用最新 release<br>• `force_build`：勾选则无视 `LAST_VERSION`，强制重打 |
+| 手动 | Actions → `Mindustry iOS IPA Auto Build (Unsigned / TrollStore)` → Run workflow：<br>• `build_version`：如 `146`（会严格校验 `v146` tag 在 Anuken/Mindustry 存在，不存在立即终止）；留空=用最新 release<br>• `force_build`：勾选则无视 `LAST_VERSION`，强制重打 |
 
 **产物位置：**
 
@@ -148,6 +163,14 @@ RoboVM 2.3.24 `PlatformFilter(SystemFilter)` 理论上能解析 `${user.home}`�
 
 **Q4：`-PnoLocalArc` 为什么必须开？**
 参考仓库 VincentZyu233/Mindustry-for-ios 同样使用该参数：禁用复合构建 `includeBuild("../Arc")` 后，就不能再调用 `:Arc:natives:*` 任务（否则 `DefaultIncludedBuildTaskGraph` 报未知子项目）。本工程改为纯文件系统 cp + jar 解压方式获取 `libarc-freetype.a`。
+
+---
+
+## 下载
+
+| [![GitHub Releases](https://img.shields.io/badge/Release-下载-blue?logo=github)](https://github.com/FiresonZ/mindustry-ios-builder/releases) | [![Actions Artifacts](https://img.shields.io/badge/Actions-Artifacts-lightgrey?logo=githubactions)](https://github.com/FiresonZ/mindustry-ios-builder/actions) |
+|---|---|
+| 未签名 IPA + `*.meta.txt`，自动生成的正式 Release | 每个 workflow run 的构建产物，保留 90 天 |
 
 ---
 
