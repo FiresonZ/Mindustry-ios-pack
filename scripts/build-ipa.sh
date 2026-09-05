@@ -500,17 +500,24 @@ if [ -f "$VER_FILE" ]; then
   echo "    版本校验通过 ✓" >&2
 fi
 
-echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildIOS -> libarc.a）" >&2
+echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> libarc.a）" >&2
 # 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 静态库。
 # libarc.a 由 arc-core/csrc/iosgl/iosgl20.cpp 等源码经 jnigen 用 clang + iPhoneOS SDK 编译产出，
 # 内含 Java_arc_backend_robovm_IOSGLES20_* 等 GLES 绑定符号；缺失则 IPA 能装但启动即
 # UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退（见 GRADLE_ARGS 上方注释）。
-# 注意任务路径前缀用 :Arc:（复合构建 includeBuild("../Arc") 的根项目名，见 CI 日志）。
-./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildIOS || {
-  echo "ERR: jnigenBuildIOS 失败，无法生成 libarc.a（Arc GLES native）" >&2
+# 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在，
+# 实际 per-target 任务带架构后缀，如 jnigenBuildIOS_<arch>_<bitness>），任务路径前缀 :Arc:
+# 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
+./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS || {
+  echo "ERR: jnigenBuildAllIOS 失败，无法生成 libarc.a（Arc GLES native）" >&2
   exit 1
 }
-ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null | head -1 || true)
+# 优先取真机 arm64 的 libarc.a（排除 simulator），兜底取任意一个
+ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null \
+  | grep -iE "ios" | grep -viE "sim|simulator" | grep -iE "arm64|aarch64" | head -1 || true)
+if [ -z "$ARC_LIB" ]; then
+  ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null | head -1 || true)
+fi
 if [ -z "$ARC_LIB" ]; then
   echo "ERR: jnigen 构建后未找到 libarc.a（在 Arc/arc-core/build 下查找）" >&2
   exit 1
