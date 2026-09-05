@@ -377,14 +377,15 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
     my @must_frameworks = (
       'UIKit', 'MetalANGLEKit', 'libGLESv2', 'libEGL', 'libfeature_support',
       'Metal', 'QuartzCore', 'CoreGraphics', 'CoreAudio', 'AudioToolbox', 'AVFoundation',
-      # libarc：Arc 引擎自身的 iOS native（jnigen 产物 libarc.xcframework，含 IOSGLES20_* GLES 绑定）。
-      # 缺它会启动即 UnsatisfiedLinkError 闪退，见下方 [6b/7] 步骤。
-      'libarc',
+      # arc：Arc 引擎自身的 iOS native（jnigen 产物 arc.xcframework，含 IOSGLES20_* GLES 绑定）。
+      # 缺它会启动即 UnsatisfiedLinkError 闪退。注意：在 -PnoLocalArc 时代 arc.framework
+      # 不存在、必须剥离；启用复合构建 + jnigenBuildAllIOS 后它由 [6b/7] 步骤构建并注入 ios/libs，
+      # 因此这里改为"确保声明"而非"剥离"。
+      'arc',
     );
     if (m{<frameworks>[\s\S]*?</frameworks>}) {
       s{(<frameworks>)([\s\S]*?)(</frameworks>)}{
         my ($open, $body, $close) = ($1, $2, $3);
-        $body =~ s{[ \t]*<framework>\s*arc\s*</framework>\n?}{}gi;
         for my $fw_name (@must_frameworks) {
           my $need_entry = qq{<framework>$fw_name</framework>};
           if ($body !~ m{<framework>\s*\Q$fw_name\E\s*</framework>}) {
@@ -399,7 +400,7 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
        {  <frameworks>\n${inner}  </frameworks>\n$1}s;
     }
 __BUILD_IPA_PATCH_ROBOVM_XML__
-  echo "    (A.3) robovm.xml 已修正：删除 arc.framework，保留有效框架列表" >&2
+  echo "    (A.3) robovm.xml 已修正：确保 arc.framework（jnigen 产物）与 MetalANGLE 框架声明齐全" >&2
 fi
 
 # 提前准备 libarc-freetype.a 及 MetalANGLEKit
@@ -503,28 +504,30 @@ if [ -f "$VER_FILE" ]; then
   echo "    版本校验通过 ✓" >&2
 fi
 
-echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> libarc.xcframework）" >&2
+echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> arc.xcframework）" >&2
 # 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 静态库。
 # libarc 的源码在 arc-core/csrc/iosgl/iosgl20.cpp（JNI 符号 Java_arc_backend_robovm_IOSGLES20_*），
 # 缺失则 IPA 能装但启动即 UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退
 # （见 GRADLE_ARGS 上方注释）。
 # 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在，
-# 实际 per-target 任务带架构后缀，如 jnigenBuildIOS_<arch>_<bitness>）；产物是 XCFramework
-# （动态 framework，输出到 arc-core/build/natives/libarc.xcframework），不是 libarc.a。
+# 实际 per-target 任务带架构后缀）；产物是 XCFramework，命名为 sharedLibName + ".xcframework"，
+# 即 arc.xcframework（不是 libarc.xcframework，sharedLibName 是 "arc" 而非 "libarc"）。
 # 任务路径前缀 :Arc: 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
 ./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS || {
-  echo "ERR: jnigenBuildAllIOS 失败，无法生成 libarc.xcframework（Arc GLES native）" >&2
+  echo "ERR: jnigenBuildAllIOS 失败，无法生成 arc.xcframework（Arc GLES native）" >&2
   exit 1
 }
-ARC_XCFW=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.xcframework" -type d 2>/dev/null | head -1 || true)
+ARC_XCFW=$(find "$BUILD_DIR/Arc/arc-core/build" \( -name "arc.xcframework" -o -name "libarc.xcframework" \) -type d 2>/dev/null | head -1 || true)
 if [ -z "$ARC_XCFW" ]; then
-  echo "ERR: jnigen 构建后未找到 libarc.xcframework（在 Arc/arc-core/build 下查找）" >&2
+  echo "ERR: jnigen 构建后未找到 arc.xcframework（在 Arc/arc-core/build 下查找）" >&2
+  echo "     当前 arc-core/build/natives 内容：" >&2
+  find "$BUILD_DIR/Arc/arc-core/build" -maxdepth 3 -type d 2>/dev/null | head -30 >&2 || true
   exit 1
 fi
 mkdir -p "$BUILD_DIR/Mindustry/ios/libs"
-rm -rf "$BUILD_DIR/Mindustry/ios/libs/libarc.xcframework"
+rm -rf "$BUILD_DIR/Mindustry/ios/libs/$(basename "$ARC_XCFW")"
 cp -R "$ARC_XCFW" "$BUILD_DIR/Mindustry/ios/libs/"
-echo "    ✓ libarc.xcframework -> ios/libs" >&2
+echo "    ✓ $(basename "$ARC_XCFW") -> ios/libs" >&2
 
 echo "==> [7/7] 构建未签名 IPA（ios:incrementConfig ios:deploy）" >&2
 
