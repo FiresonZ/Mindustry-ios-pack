@@ -10,6 +10,9 @@ dist/
 # ==== Build logs ====
 *.log
 
+# ==== Uploaded debug logs（用户上传的构建日志，仅本地调试用，不入库） ====
+.uploads/
+
 # ==== macOS signing artifacts (留档以防以后恢复签名流程) ====
 *.p12
 *.mobileprovision
