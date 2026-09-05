@@ -1,0 +1,690 @@
+2026-09-05T11:18:56.4653760Z Current runner version: '2.337.0'
+2026-09-05T11:18:56.4672800Z ##[group]Runner Image Provisioner
+2026-09-05T11:18:56.4673480Z Hosted Compute Agent
+2026-09-05T11:18:56.4673880Z Version: 20260828.587
+2026-09-05T11:18:56.4674360Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-05T11:18:56.4674860Z Build Date: 2026-08-28T16:44:25Z
+2026-09-05T11:18:56.4675380Z Worker ID: {612744d0-dbcc-4672-99be-6bcdc5968215}
+2026-09-05T11:18:56.4675840Z Azure Region: westus
+2026-09-05T11:18:56.4676220Z ##[endgroup]
+2026-09-05T11:18:56.4677270Z ##[group]Operating System
+2026-09-05T11:18:56.4677650Z macOS
+2026-09-05T11:18:56.4677970Z 14.8.9
+2026-09-05T11:18:56.4678290Z 23J631
+2026-09-05T11:18:56.4678620Z ##[endgroup]
+2026-09-05T11:18:56.4678970Z ##[group]Runner Image
+2026-09-05T11:18:56.4679350Z Image: macos-14-arm64
+2026-09-05T11:18:56.4679720Z Version: 20260831.0302.1
+2026-09-05T11:18:56.4680600Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20260831.0302/images/macos/macos-14-arm64-Readme.md
+2026-09-05T11:18:56.4681650Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20260831.0302
+2026-09-05T11:18:56.4682320Z ##[endgroup]
+2026-09-05T11:18:56.4683070Z ##[group]GITHUB_TOKEN Permissions
+2026-09-05T11:18:56.4684420Z Contents: write
+2026-09-05T11:18:56.4684870Z Metadata: read
+2026-09-05T11:18:56.4685230Z ##[endgroup]
+2026-09-05T11:18:56.4686950Z Secret source: Actions
+2026-09-05T11:18:56.4687620Z Prepare workflow directory
+2026-09-05T11:18:56.5121980Z Prepare all required actions
+2026-09-05T11:18:56.5178680Z Getting action download info
+2026-09-05T11:18:56.8321170Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-09-05T11:18:57.4772270Z Download action repository 'actions/setup-java@v6' (SHA:dd06d9cba3e5552c54d9f8ea23572deb30010f7c)
+2026-09-05T11:18:57.9920560Z Download action repository 'gradle/actions@v6' (SHA:9c971963bec38e04b3d30dcc455b5382be2fdbfb)
+2026-09-05T11:18:58.7132880Z Download action repository 'actions/upload-artifact@v6' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+2026-09-05T11:18:58.8071190Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+2026-09-05T11:18:59.1312430Z Download action repository 'actions/cache@v6' (SHA:55cc8345863c7cc4c66a329aec7e433d2d1c52a9)
+2026-09-05T11:18:59.3536490Z Complete job name: Build iOS IPA (v159.7)
+2026-09-05T11:18:59.4132680Z ##[group]Run actions/checkout@v7
+2026-09-05T11:18:59.4134820Z with:
+2026-09-05T11:18:59.4135370Z   submodules: false
+2026-09-05T11:18:59.4135940Z   repository: FiresonZ/mindustry-ios-builder
+2026-09-05T11:18:59.4141550Z   token: ***
+2026-09-05T11:18:59.4142030Z   ssh-strict: true
+2026-09-05T11:18:59.4142520Z   ssh-user: git
+2026-09-05T11:18:59.4143020Z   persist-credentials: true
+2026-09-05T11:18:59.4143570Z   clean: true
+2026-09-05T11:18:59.4144090Z   sparse-checkout-cone-mode: true
+2026-09-05T11:18:59.4144680Z   fetch-depth: 1
+2026-09-05T11:18:59.4145190Z   fetch-tags: false
+2026-09-05T11:18:59.4145830Z   show-progress: true
+2026-09-05T11:18:59.4146340Z   lfs: false
+2026-09-05T11:18:59.4146840Z   set-safe-directory: true
+2026-09-05T11:18:59.4147440Z   allow-unsafe-pr-checkout: false
+2026-09-05T11:18:59.4148630Z env:
+2026-09-05T11:18:59.4149460Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:18:59.4150530Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:18:59.4151180Z ##[endgroup]
+2026-09-05T11:18:59.7605030Z Syncing repository: FiresonZ/mindustry-ios-builder
+2026-09-05T11:18:59.7606770Z ##[group]Getting Git version info
+2026-09-05T11:18:59.7607740Z Working directory is '/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder'
+2026-09-05T11:18:59.7609220Z [command]/opt/homebrew/bin/git version
+2026-09-05T11:18:59.7815780Z git version 2.55.0
+2026-09-05T11:18:59.7829520Z ##[endgroup]
+2026-09-05T11:18:59.7834700Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/9ea3298d-b4e4-4fb5-b74e-d148b0370f55/.gitconfig'
+2026-09-05T11:18:59.7838840Z Temporarily overriding HOME='/Users/runner/work/_temp/9ea3298d-b4e4-4fb5-b74e-d148b0370f55' before making global git config changes
+2026-09-05T11:18:59.7840490Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-05T11:18:59.7842320Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:18:59.7937480Z Deleting the contents of '/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder'
+2026-09-05T11:18:59.7939300Z ##[group]Determining repository object format
+2026-09-05T11:18:59.7940350Z ##[endgroup]
+2026-09-05T11:18:59.7941210Z ##[group]Initializing the repository
+2026-09-05T11:18:59.7944520Z [command]/opt/homebrew/bin/git init /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:18:59.8125610Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-05T11:18:59.8128760Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-05T11:18:59.8131800Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-05T11:18:59.8134050Z hint: call:
+2026-09-05T11:18:59.8135270Z hint:
+2026-09-05T11:18:59.8136830Z hint: 	git config --global init.defaultBranch <name>
+2026-09-05T11:18:59.8138620Z hint:
+2026-09-05T11:18:59.8140360Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-05T11:18:59.8141670Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-05T11:18:59.8142560Z hint:
+2026-09-05T11:18:59.8143030Z hint: 	git branch -m <name>
+2026-09-05T11:18:59.8144950Z hint:
+2026-09-05T11:18:59.8147420Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-05T11:18:59.8151100Z Initialized empty Git repository in /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git/
+2026-09-05T11:18:59.8154800Z [command]/opt/homebrew/bin/git remote add origin https://github.com/FiresonZ/mindustry-ios-builder
+2026-09-05T11:18:59.8207140Z ##[endgroup]
+2026-09-05T11:18:59.8209920Z ##[group]Disabling automatic garbage collection
+2026-09-05T11:18:59.8213620Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-09-05T11:18:59.8263910Z ##[endgroup]
+2026-09-05T11:18:59.8264820Z ##[group]Setting up auth
+2026-09-05T11:18:59.8266020Z Removing SSH command configuration
+2026-09-05T11:18:59.8267250Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-05T11:18:59.8307330Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-05T11:18:59.9289800Z Removing HTTP extra header
+2026-09-05T11:18:59.9291690Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-05T11:18:59.9319690Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-05T11:18:59.9860140Z Removing includeIf entries pointing to credentials config files
+2026-09-05T11:18:59.9861380Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-05T11:18:59.9904970Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-05T11:19:00.1001830Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-a156a1f6-f0a7-4802-8599-bbef7a735d5a.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-05T11:19:00.1022060Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git.path /Users/runner/work/_temp/git-credentials-a156a1f6-f0a7-4802-8599-bbef7a735d5a.config
+2026-09-05T11:19:00.1026890Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-a156a1f6-f0a7-4802-8599-bbef7a735d5a.config
+2026-09-05T11:19:00.1030730Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-a156a1f6-f0a7-4802-8599-bbef7a735d5a.config
+2026-09-05T11:19:00.1034230Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-a156a1f6-f0a7-4802-8599-bbef7a735d5a.config
+2026-09-05T11:19:00.1065060Z ##[endgroup]
+2026-09-05T11:19:00.1065990Z ##[group]Fetching the repository
+2026-09-05T11:19:00.1070050Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c025f7d94e11d8e914725884913ec5e554045262:refs/remotes/origin/main
+2026-09-05T11:19:00.6281160Z From https://github.com/FiresonZ/mindustry-ios-builder
+2026-09-05T11:19:00.6282010Z  * [new ref]         c025f7d94e11d8e914725884913ec5e554045262 -> origin/main
+2026-09-05T11:19:00.6285850Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
+2026-09-05T11:19:00.6340650Z   origin/main
+2026-09-05T11:19:00.6345690Z [command]/opt/homebrew/bin/git rev-parse refs/remotes/origin/main
+2026-09-05T11:19:00.6392560Z c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:19:00.6399120Z ##[endgroup]
+2026-09-05T11:19:00.6400250Z ##[group]Determining the checkout info
+2026-09-05T11:19:00.6401500Z ##[endgroup]
+2026-09-05T11:19:00.6408340Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-09-05T11:19:00.6485660Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-05T11:19:00.6545330Z ##[group]Checking out the ref
+2026-09-05T11:19:00.6547150Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-05T11:19:00.6806250Z Switched to a new branch 'main'
+2026-09-05T11:19:00.6825520Z branch 'main' set up to track 'origin/main'.
+2026-09-05T11:19:00.6829860Z ##[endgroup]
+2026-09-05T11:19:00.6944370Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-09-05T11:19:00.6998890Z c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:19:00.7240550Z ##[group]Run echo "Release Tag      : v159.7"
+2026-09-05T11:19:00.7241260Z [36;1mecho "Release Tag      : v159.7"[0m
+2026-09-05T11:19:00.7241720Z [36;1mecho "Build Version    : 159.7"[0m
+2026-09-05T11:19:00.7242520Z [36;1mecho "Display Version  : 8.159.7"[0m
+2026-09-05T11:19:00.7243020Z [36;1mecho "Reason           : new release detected (v159.7)"[0m
+2026-09-05T11:19:00.7243530Z [36;1mecho "macOS Version    : $(sw_vers -productVersion)"[0m
+2026-09-05T11:19:00.7244030Z [36;1mecho "Xcode Version    : $(xcodebuild -version | head -1)"[0m
+2026-09-05T11:19:00.7244630Z [36;1mecho "Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)"[0m
+2026-09-05T11:19:00.7355710Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:19:00.7356850Z env:
+2026-09-05T11:19:00.7358460Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:19:00.7359160Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:19:00.7359610Z ##[endgroup]
+2026-09-05T11:19:00.7745550Z Release Tag      : v159.7
+2026-09-05T11:19:00.7745990Z Build Version    : 159.7
+2026-09-05T11:19:00.7746290Z Display Version  : 8.159.7
+2026-09-05T11:19:00.7746700Z Reason           : new release detected (v159.7)
+2026-09-05T11:19:00.7839760Z macOS Version    : 14.8.9
+2026-09-05T11:19:00.9677990Z *** Terminating app due to uncaught exception 'NSFileHandleOperationException', reason: '*** -[_NSStdIOFileHandle writeData:]: Broken pipe'
+2026-09-05T11:19:00.9685110Z *** First throw call stack:
+2026-09-05T11:19:00.9685570Z Xcode Version    : Xcode 15.4
+2026-09-05T11:19:00.9686200Z (
+2026-09-05T11:19:00.9686950Z Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)
+2026-09-05T11:19:00.9688520Z 	0   CoreFoundation                      0x0000000184f0304c __exceptionPreprocess + 176
+2026-09-05T11:19:00.9689650Z 	1   libobjc.A.dylib                     0x00000001849e6158 objc_exception_throw + 60
+2026-09-05T11:19:00.9690530Z 	2   Foundation                          0x00000001866894e4 -[NSConcreteFileHandle readDataUpToLength:error:] + 0
+2026-09-05T11:19:00.9692350Z 	3   Foundation                          0x0000000185fb4414 -[NSConcreteFileHandle writeData:] + 300
+2026-09-05T11:19:00.9693520Z 	4   xcodebuild                          0x00000001045f0a38 -[XcodebuildPreIDEHandler handleVersionWithArguments:] + 660
+2026-09-05T11:19:00.9694440Z 	5   xcodebuild                          0x00000001045f04e8 -[XcodebuildPreIDEHandler runWithArguments:] + 108
+2026-09-05T11:19:00.9695200Z 	6   xcodebuild                          0x00000001045f0088 main + 380
+2026-09-05T11:19:00.9696000Z 	7   dyld                                0x0000000184a23154 start + 2476
+2026-09-05T11:19:00.9696410Z )
+2026-09-05T11:19:00.9696800Z libc++abi: terminating due to uncaught exception of type NSException
+2026-09-05T11:19:00.9845790Z ##[group]Run actions/setup-java@v6
+2026-09-05T11:19:00.9846140Z with:
+2026-09-05T11:19:00.9846380Z   distribution: temurin
+2026-09-05T11:19:00.9846670Z   java-version: 17
+2026-09-05T11:19:00.9846960Z   java-package: jdk
+2026-09-05T11:19:00.9847220Z   check-latest: false
+2026-09-05T11:19:00.9847470Z   force-download: false
+2026-09-05T11:19:00.9847740Z   set-default: true
+2026-09-05T11:19:00.9847990Z   server-id: github
+2026-09-05T11:19:00.9848270Z   mvn-repositories-include-central: true
+2026-09-05T11:19:00.9848610Z   mvn-repositories-prioritize-central: true
+2026-09-05T11:19:00.9848960Z   overwrite-settings: true
+2026-09-05T11:19:00.9849320Z   cache-read-only: false
+2026-09-05T11:19:00.9849580Z   job-status: success
+2026-09-05T11:19:00.9851840Z   token: ***
+2026-09-05T11:19:00.9852140Z   show-download-progress: false
+2026-09-05T11:19:00.9852450Z   problem-matcher: true
+2026-09-05T11:19:00.9852710Z env:
+2026-09-05T11:19:00.9853190Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:19:00.9853660Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:19:00.9853970Z ##[endgroup]
+2026-09-05T11:19:01.0631940Z ##[group]Installed distributions
+2026-09-05T11:19:01.0689070Z Trying to resolve the latest version from remote
+2026-09-05T11:19:01.4494120Z Resolved latest version as 17.0.20+101
+2026-09-05T11:19:01.4494750Z Trying to download...
+2026-09-05T11:19:01.4495730Z Downloading Java 17.0.20+101 (Temurin-Hotspot) from https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz ...
+2026-09-05T11:19:03.1219340Z Verifying Java package signature...
+2026-09-05T11:19:05.0311980Z Extracting Java archive...
+2026-09-05T11:19:05.0415630Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/71363096-d492-4afd-ba61-b3308111eede -f /Users/runner/work/_temp/fd7e01bf-2bb9-4e5b-8aa0-5cba07a40be6
+2026-09-05T11:19:06.2556670Z Java 17.0.20+101 was downloaded
+2026-09-05T11:19:06.2557900Z Setting Java 17.0.20+101 as the default
+2026-09-05T11:19:06.2882090Z 
+2026-09-05T11:19:06.2884980Z Java configuration:
+2026-09-05T11:19:06.2885630Z   Distribution: temurin
+2026-09-05T11:19:06.2886220Z   Version: 17.0.20+101
+2026-09-05T11:19:06.2886840Z   Path: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:06.2889050Z 
+2026-09-05T11:19:06.2890320Z ##[endgroup]
+2026-09-05T11:19:06.2948240Z Creating settings.xml with server-id: github
+2026-09-05T11:19:06.2951850Z Creating toolchains.xml for JDK version 17 from temurin
+2026-09-05T11:19:06.2952950Z Writing to /Users/runner/.m2/settings.xml
+2026-09-05T11:19:06.2954610Z Writing to /Users/runner/.m2/toolchains.xml
+2026-09-05T11:19:06.2971080Z Configured MAVEN_ARGS to include -ntp to suppress Maven transfer progress logs. Set 'show-download-progress: true' to keep the download progress output.
+2026-09-05T11:19:06.3146980Z ##[group]Run java -version
+2026-09-05T11:19:06.3147350Z [36;1mjava -version[0m
+2026-09-05T11:19:06.3274030Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:19:06.3274400Z env:
+2026-09-05T11:19:06.3274880Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:19:06.3275350Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:19:06.3275780Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:06.3276500Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:06.3276950Z   MAVEN_ARGS: -ntp
+2026-09-05T11:19:06.3277250Z ##[endgroup]
+2026-09-05T11:19:06.5748580Z openjdk version "17.0.20.1" 2026-08-18
+2026-09-05T11:19:06.5752850Z OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
+2026-09-05T11:19:06.5755010Z OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+2026-09-05T11:19:06.6256260Z ##[group]Run gradle/actions/setup-gradle@v6
+2026-09-05T11:19:06.6256660Z with:
+2026-09-05T11:19:06.6256900Z   cache-read-only: false
+2026-09-05T11:19:06.6257130Z   cache-cleanup: on-success
+2026-09-05T11:19:06.6257340Z   cache-provider: enhanced
+2026-09-05T11:19:06.6257530Z   cache-disabled: false
+2026-09-05T11:19:06.6257760Z   cache-write-only: false
+2026-09-05T11:19:06.6257980Z   cache-overwrite-existing: false
+2026-09-05T11:19:06.6258230Z   gradle-home-cache-includes: caches
+notifications
+
+2026-09-05T11:19:06.6258510Z   add-job-summary: always
+2026-09-05T11:19:06.6258720Z   add-job-summary-as-pr-comment: never
+2026-09-05T11:19:06.6258950Z   dependency-graph: disabled
+2026-09-05T11:19:06.6259270Z   dependency-graph-report-dir: dependency-graph-reports
+2026-09-05T11:19:06.6259590Z   dependency-graph-continue-on-failure: true
+2026-09-05T11:19:06.6259870Z   build-scan-publish: false
+2026-09-05T11:19:06.6260050Z   validate-wrappers: true
+2026-09-05T11:19:06.6260310Z   allow-snapshot-wrappers: false
+2026-09-05T11:19:06.6260530Z   gradle-home-cache-strict-match: false
+2026-09-05T11:19:06.6260750Z   workflow-job-context: null
+2026-09-05T11:19:06.6262790Z   github-token: ***
+2026-09-05T11:19:06.6262960Z env:
+2026-09-05T11:19:06.6263250Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:19:06.6263630Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:19:06.6264030Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:06.6264640Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:06.6265050Z   MAVEN_ARGS: -ntp
+2026-09-05T11:19:06.6265200Z ##[endgroup]
+2026-09-05T11:19:07.0582770Z Gradle User Home already exists at /Users/runner/.gradle
+2026-09-05T11:19:07.0611390Z Merged default JDK locations into /Users/runner/.m2/toolchains.xml
+2026-09-05T11:19:07.0614800Z Enhanced Caching: This build is using the proprietary 'gradle-actions-caching' provider for optimized caching support. See https://github.com/gradle/actions/blob/main/DISTRIBUTION.md for terms of use and opt-out instructions.
+2026-09-05T11:19:07.1154890Z ##[group]Restore Gradle state from cache
+2026-09-05T11:19:07.3139420Z Cache hit for restore-key: gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-afe7cfd025a819d20ff963b53c5c7446d46bc972
+2026-09-05T11:19:08.1757320Z Received 3368694 of 3368694 (100.0%), 4.4 MBs/sec
+2026-09-05T11:19:08.1840920Z Cache Size: ~3 MB (3368694 B)
+2026-09-05T11:19:08.1842190Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/4fa62866-f6dc-4acb-9fcb-2b3999263477/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:08.4451070Z Cache restored successfully
+2026-09-05T11:19:08.4454500Z Restored cache entry with key gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262 in 1330ms
+2026-09-05T11:19:08.5863040Z Cache hit for: gradle-dependencies-v2-a826e427810a8c3137a3688744aef4fc
+2026-09-05T11:19:08.5870320Z Cache hit for: gradle-build-cache-v2-156479a1fb2ac6a6fe123217aa6e1d48
+2026-09-05T11:19:08.5871920Z Cache hit for: gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:19:08.5875340Z Cache hit for: gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:19:08.5876850Z Cache hit for: gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:19:08.5880680Z Cache hit for: gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:19:09.0946870Z Received 235075 of 235075 (100.0%), 0.8 MBs/sec
+2026-09-05T11:19:09.1049140Z Cache Size: ~0 MB (235075 B)
+2026-09-05T11:19:09.1154440Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/9b84c18c-9b08-474e-b3d0-989fbe1123bc/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:09.1552800Z Received 378898 of 378898 (100.0%), 1.0 MBs/sec
+2026-09-05T11:19:09.1712550Z Cache Size: ~0 MB (378898 B)
+2026-09-05T11:19:09.2398210Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/157aaa41-ae9e-433b-a114-ea109c2342b6/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:09.3708600Z Cache restored successfully
+2026-09-05T11:19:09.3809170Z Restored cache entry with key gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812 in 931ms
+2026-09-05T11:19:09.6375550Z Received 6775751 of 6775751 (100.0%), 7.2 MBs/sec
+2026-09-05T11:19:09.6473470Z Cache Size: ~6 MB (6775751 B)
+2026-09-05T11:19:09.6885740Z Cache restored successfully
+2026-09-05T11:19:09.6908370Z Restored cache entry with key gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25 in 1244ms
+2026-09-05T11:19:09.7053660Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/261a3413-31bf-45aa-9ddf-a1be8799c498/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:09.7377490Z Received 37748736 of 205720493 (18.3%), 35.5 MBs/sec
+2026-09-05T11:19:09.7743030Z Received 25165824 of 77077658 (32.6%), 24.0 MBs/sec
+2026-09-05T11:19:09.7770060Z Cache restored successfully
+2026-09-05T11:19:09.7833600Z Restored cache entry with key gradle-build-cache-v2-156479a1fb2ac6a6fe123217aa6e1d48 in 1337ms
+2026-09-05T11:19:09.7917200Z Received 29360128 of 136344269 (21.5%), 27.9 MBs/sec
+2026-09-05T11:19:10.6548700Z Received 77077658 of 77077658 (100.0%), 39.1 MBs/sec
+2026-09-05T11:19:10.7732330Z Cache Size: ~74 MB (77077658 B)
+2026-09-05T11:19:10.8015050Z Received 104857600 of 205720493 (51.0%), 48.3 MBs/sec
+2026-09-05T11:19:10.8015630Z Received 83886080 of 136344269 (61.5%), 39.8 MBs/sec
+2026-09-05T11:19:10.8295050Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/f6178b84-16bf-4b32-a2b9-4876a69c95c5/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:11.8019580Z Received 136344269 of 136344269 (100.0%), 43.3 MBs/sec
+2026-09-05T11:19:11.8033030Z Cache Size: ~130 MB (136344269 B)
+2026-09-05T11:19:11.8200010Z Received 171966464 of 205720493 (83.6%), 53.1 MBs/sec
+2026-09-05T11:19:11.8255150Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/a6b387f9-18b6-4e3d-a5a5-b89e8688716a/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:11.9554570Z Received 205720493 of 205720493 (100.0%), 61.0 MBs/sec
+2026-09-05T11:19:11.9659260Z Cache Size: ~196 MB (205720493 B)
+2026-09-05T11:19:11.9939750Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/5f500dba-6bb6-4e0a-9119-e2e12f3b10ec/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:19:13.1484670Z Cache restored successfully
+2026-09-05T11:19:13.1589260Z Restored cache entry with key gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98 in 4708ms
+2026-09-05T11:19:13.4812960Z Cache restored successfully
+2026-09-05T11:19:13.4844520Z Restored cache entry with key gradle-dependencies-v2-a826e427810a8c3137a3688744aef4fc in 5038ms
+2026-09-05T11:19:13.8895640Z Cache restored successfully
+2026-09-05T11:19:13.8908630Z Restored cache entry with key gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba in 5444ms
+2026-09-05T11:19:13.8924140Z ##[endgroup]
+2026-09-05T11:19:13.8996460Z ##[group]All Gradle Wrapper jars are valid
+2026-09-05T11:19:13.8997450Z 
+2026-09-05T11:19:13.9002620Z ##[endgroup]
+2026-09-05T11:19:13.9263240Z ##[group]Run chmod +x ./scripts/build-ipa.sh
+2026-09-05T11:19:13.9264260Z [36;1mchmod +x ./scripts/build-ipa.sh[0m
+2026-09-05T11:19:13.9264660Z [36;1mset -o pipefail[0m
+2026-09-05T11:19:13.9265070Z [36;1m./scripts/build-ipa.sh 2>&1 | tee build-ipa.log | tail -150[0m
+2026-09-05T11:19:13.9265480Z [36;1m# 从脚本最后输出中解析[0m
+2026-09-05T11:19:13.9266070Z [36;1mLAST=$(tail -5 build-ipa.log | grep -E '^(IPA_OUTPUT|IPA_META|RELEASE_TAG|BUILD_VERSION|DISPLAY_VERSION)=' || true)[0m
+2026-09-05T11:19:13.9266610Z [36;1mecho "$LAST"[0m
+2026-09-05T11:19:13.9266890Z [36;1mecho "$LAST" >> "$GITHUB_OUTPUT"[0m
+2026-09-05T11:19:13.9351040Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:19:13.9351440Z env:
+2026-09-05T11:19:13.9351850Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:19:13.9352350Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:19:13.9352910Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:13.9353670Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:19:13.9354180Z   MAVEN_ARGS: -ntp
+2026-09-05T11:19:13.9354500Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-09-05T11:19:13.9354870Z   GRADLE_USER_HOME: /Users/runner/.gradle
+2026-09-05T11:19:13.9355210Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-09-05T11:19:13.9355710Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-09-05T11:19:13.9356230Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-09-05T11:19:13.9356600Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-09-05T11:19:13.9356930Z   BUILD_VERSION: 159.7
+2026-09-05T11:19:13.9357200Z   SKIP_SIGNING: true
+2026-09-05T11:19:13.9357520Z ##[endgroup]
+2026-09-05T11:20:32.4672910Z 	at org.gradle.execution.TaskNameResolvingBuildTaskScheduler.scheduleRequestedTasks(TaskNameResolvingBuildTaskScheduler.java:66)
+2026-09-05T11:20:32.4676220Z 	at org.gradle.execution.DefaultTasksBuildTaskScheduler.scheduleRequestedTasks(DefaultTasksBuildTaskScheduler.java:72)
+2026-09-05T11:20:32.4687160Z 	at org.gradle.initialization.DefaultTaskExecutionPreparer.lambda$scheduleRequestedTasks$0(DefaultTaskExecutionPreparer.java:47)
+2026-09-05T11:20:32.4688040Z 	at org.gradle.internal.Factories$1.create(Factories.java:30)
+2026-09-05T11:20:32.4690180Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:269)
+2026-09-05T11:20:32.4691480Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:42)
+2026-09-05T11:20:32.4692290Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:267)
+2026-09-05T11:20:32.4693190Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withReplacedLocks$3(DefaultWorkerLeaseService.java:365)
+2026-09-05T11:20:32.4694030Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:337)
+2026-09-05T11:20:32.4695060Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withReplacedLocks(DefaultWorkerLeaseService.java:364)
+2026-09-05T11:20:32.4944300Z 	at org.gradle.api.internal.project.DefaultProjectStateRegistry$DefaultBuildProjectRegistry.withMutableStateOfAllProjects(DefaultProjectStateRegistry.java:254)
+2026-09-05T11:20:32.4945470Z 	at org.gradle.api.internal.project.DefaultProjectStateRegistry$DefaultBuildProjectRegistry.withMutableStateOfAllProjects(DefaultProjectStateRegistry.java:247)
+2026-09-05T11:20:32.4946510Z 	at org.gradle.initialization.DefaultTaskExecutionPreparer.scheduleRequestedTasks(DefaultTaskExecutionPreparer.java:46)
+2026-09-05T11:20:32.4947460Z 	at org.gradle.initialization.VintageBuildModelController.lambda$scheduleRequestedTasks$0(VintageBuildModelController.java:75)
+2026-09-05T11:20:32.4949200Z 	at org.gradle.internal.model.StateTransitionController.lambda$inState$1(StateTransitionController.java:109)
+2026-09-05T11:20:32.4950090Z 	at org.gradle.internal.model.StateTransitionController.lambda$inState$2(StateTransitionController.java:124)
+2026-09-05T11:20:32.4950760Z 	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+2026-09-05T11:20:32.4951500Z 	at org.gradle.internal.model.StateTransitionController.inState(StateTransitionController.java:120)
+2026-09-05T11:20:32.4952370Z 	at org.gradle.internal.model.StateTransitionController.inState(StateTransitionController.java:108)
+2026-09-05T11:20:32.4953270Z 	at org.gradle.initialization.VintageBuildModelController.scheduleRequestedTasks(VintageBuildModelController.java:75)
+2026-09-05T11:20:32.4954250Z 	at org.gradle.internal.build.DefaultBuildLifecycleController$DefaultWorkGraphBuilder.addRequestedTasks(DefaultBuildLifecycleController.java:404)
+2026-09-05T11:20:32.4955210Z 	at org.gradle.internal.buildtree.DefaultBuildTreeWorkPreparer.lambda$scheduleRequestedTasks$0(DefaultBuildTreeWorkPreparer.java:40)
+2026-09-05T11:20:32.4956180Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$populateWorkGraph$7(DefaultBuildLifecycleController.java:189)
+2026-09-05T11:20:32.4957140Z 	at org.gradle.internal.build.DefaultBuildWorkPreparer.populateWorkGraph(DefaultBuildWorkPreparer.java:42)
+2026-09-05T11:20:32.4958100Z 	at org.gradle.internal.build.BuildOperationFiringBuildWorkPreparer$PopulateWorkGraph.populateTaskGraph(BuildOperationFiringBuildWorkPreparer.java:106)
+2026-09-05T11:20:32.4959150Z 	at org.gradle.internal.build.BuildOperationFiringBuildWorkPreparer$PopulateWorkGraph.run(BuildOperationFiringBuildWorkPreparer.java:92)
+2026-09-05T11:20:32.4960060Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+2026-09-05T11:20:32.4960880Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+2026-09-05T11:20:32.4961700Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+2026-09-05T11:20:32.4962450Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.4963260Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+2026-09-05T11:20:32.4964090Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.4964930Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+2026-09-05T11:20:32.4965900Z 	at org.gradle.internal.build.BuildOperationFiringBuildWorkPreparer.populateWorkGraph(BuildOperationFiringBuildWorkPreparer.java:67)
+2026-09-05T11:20:32.4966960Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$populateWorkGraph$8(DefaultBuildLifecycleController.java:189)
+2026-09-05T11:20:32.4967790Z 	at org.gradle.internal.model.StateTransitionController.lambda$inState$1(StateTransitionController.java:109)
+2026-09-05T11:20:32.4968600Z 	at org.gradle.internal.model.StateTransitionController.lambda$inState$2(StateTransitionController.java:124)
+2026-09-05T11:20:32.4969360Z 	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+2026-09-05T11:20:32.4970420Z 	at org.gradle.internal.model.StateTransitionController.inState(StateTransitionController.java:120)
+2026-09-05T11:20:32.4971140Z 	at org.gradle.internal.model.StateTransitionController.inState(StateTransitionController.java:108)
+2026-09-05T11:20:32.4972030Z 	at org.gradle.internal.build.DefaultBuildLifecycleController.populateWorkGraph(DefaultBuildLifecycleController.java:189)
+2026-09-05T11:20:32.4973050Z 	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.populateWorkGraph(DefaultBuildWorkGraphController.java:169)
+2026-09-05T11:20:32.4974050Z 	at org.gradle.composite.internal.DefaultBuildController.populateWorkGraph(DefaultBuildController.java:76)
+2026-09-05T11:20:32.4975250Z 	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph$DefaultBuildTreeWorkGraphBuilder.withWorkGraph(DefaultIncludedBuildTaskGraph.java:155)
+2026-09-05T11:20:32.4976290Z 	at org.gradle.internal.buildtree.DefaultBuildTreeWorkPreparer.lambda$scheduleRequestedTasks$1(DefaultBuildTreeWorkPreparer.java:40)
+2026-09-05T11:20:32.4977290Z 	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph$DefaultBuildTreeWorkGraph$1.run(DefaultIncludedBuildTaskGraph.java:211)
+2026-09-05T11:20:32.4978210Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:29)
+2026-09-05T11:20:32.4979040Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:26)
+2026-09-05T11:20:32.4979900Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+2026-09-05T11:20:32.4980710Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.4981550Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+2026-09-05T11:20:32.4982390Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.4983200Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:47)
+2026-09-05T11:20:32.4984140Z 	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph$DefaultBuildTreeWorkGraph.scheduleWork(DefaultIncludedBuildTaskGraph.java:206)
+2026-09-05T11:20:32.4985130Z 	at org.gradle.internal.buildtree.DefaultBuildTreeWorkPreparer.scheduleRequestedTasks(DefaultBuildTreeWorkPreparer.java:36)
+2026-09-05T11:20:32.4986090Z 	at org.gradle.internal.cc.impl.barrier.BarrierAwareBuildTreeWorkPreparer.scheduleRequestedTasks$lambda$0(BarrierAwareBuildTreeWorkPreparer.kt:34)
+2026-09-05T11:20:32.4987220Z 	at org.gradle.internal.cc.impl.barrier.VintageConfigurationTimeActionRunner.runConfigurationTimeAction(VintageConfigurationTimeActionRunner.kt:48)
+2026-09-05T11:20:32.4988190Z 	at org.gradle.internal.cc.impl.barrier.BarrierAwareBuildTreeWorkPreparer.scheduleRequestedTasks(BarrierAwareBuildTreeWorkPreparer.kt:33)
+2026-09-05T11:20:32.4989170Z 	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1.apply(VintageBuildTreeWorkController.kt:36)
+2026-09-05T11:20:32.4990030Z 	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController$scheduleAndRunRequestedTasks$1.apply(VintageBuildTreeWorkController.kt:35)
+2026-09-05T11:20:32.4990940Z 	at org.gradle.composite.internal.DefaultIncludedBuildTaskGraph.withNewWorkGraph(DefaultIncludedBuildTaskGraph.java:114)
+2026-09-05T11:20:32.4991830Z 	at org.gradle.internal.cc.impl.VintageBuildTreeWorkController.scheduleAndRunRequestedTasks(VintageBuildTreeWorkController.kt:35)
+2026-09-05T11:20:32.4992960Z 	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$scheduleAndRunTasks$1(DefaultBuildTreeLifecycleController.java:77)
+2026-09-05T11:20:32.4994000Z 	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.lambda$runBuild$4(DefaultBuildTreeLifecycleController.java:120)
+2026-09-05T11:20:32.4994890Z 	at org.gradle.internal.model.StateTransitionController.lambda$transition$6(StateTransitionController.java:179)
+2026-09-05T11:20:32.4996340Z 	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:276)
+2026-09-05T11:20:32.4997410Z 	at org.gradle.internal.model.StateTransitionController.lambda$transition$7(StateTransitionController.java:179)
+2026-09-05T11:20:32.4998100Z 	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:45)
+2026-09-05T11:20:32.4998870Z 	at org.gradle.internal.model.StateTransitionController.transition(StateTransitionController.java:179)
+2026-09-05T11:20:32.4999700Z 	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.runBuild(DefaultBuildTreeLifecycleController.java:117)
+2026-09-05T11:20:32.5000870Z 	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:77)
+2026-09-05T11:20:32.5001930Z 	at org.gradle.internal.buildtree.DefaultBuildTreeLifecycleController.scheduleAndRunTasks(DefaultBuildTreeLifecycleController.java:72)
+2026-09-05T11:20:32.5002860Z 	at org.gradle.tooling.internal.provider.ExecuteBuildActionRunner.run(ExecuteBuildActionRunner.java:31)
+2026-09-05T11:20:32.5003650Z 	at org.gradle.launcher.exec.ChainingBuildActionRunner.run(ChainingBuildActionRunner.java:35)
+2026-09-05T11:20:32.5004460Z 	at org.gradle.internal.buildtree.ProblemReportingBuildActionRunner.run(ProblemReportingBuildActionRunner.java:54)
+2026-09-05T11:20:32.5005310Z 	at org.gradle.launcher.exec.BuildOutcomeReportingBuildActionRunner.run(BuildOutcomeReportingBuildActionRunner.java:83)
+2026-09-05T11:20:32.5006250Z 	at org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner.run(FileSystemWatchingBuildActionRunner.java:135)
+2026-09-05T11:20:32.5007200Z 	at org.gradle.launcher.exec.BuildCompletionNotifyingBuildActionRunner.run(BuildCompletionNotifyingBuildActionRunner.java:54)
+2026-09-05T11:20:32.5008270Z 	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.lambda$execute$0(RootBuildLifecycleBuildActionExecutor.java:101)
+2026-09-05T11:20:32.5009000Z 	at org.gradle.composite.internal.DefaultRootBuildState.run(DefaultRootBuildState.java:126)
+2026-09-05T11:20:32.5010190Z 	at org.gradle.launcher.exec.RootBuildLifecycleBuildActionExecutor.execute(RootBuildLifecycleBuildActionExecutor.java:101)
+2026-09-05T11:20:32.5011170Z 	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.runRootBuildAction(BuildTreeLifecycleBuildActionExecutor.java:98)
+2026-09-05T11:20:32.5012310Z 	at org.gradle.launcher.exec.BuildTreeLifecycleBuildActionExecutor.execute(BuildTreeLifecycleBuildActionExecutor.java:69)
+2026-09-05T11:20:32.5013340Z 	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:65)
+2026-09-05T11:20:32.5014230Z 	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor$2.call(RunAsBuildOperationBuildActionExecutor.java:61)
+2026-09-05T11:20:32.5015210Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
+2026-09-05T11:20:32.5016150Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
+2026-09-05T11:20:32.5017040Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
+2026-09-05T11:20:32.5017780Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.5018650Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
+2026-09-05T11:20:32.5019540Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
+2026-09-05T11:20:32.5020360Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
+2026-09-05T11:20:32.5021330Z 	at org.gradle.launcher.exec.RunAsBuildOperationBuildActionExecutor.execute(RunAsBuildOperationBuildActionExecutor.java:61)
+2026-09-05T11:20:32.5022490Z 	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.lambda$execute$0(RunAsWorkerThreadBuildActionExecutor.java:36)
+2026-09-05T11:20:32.5023440Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.lambda$withLocksAcquired$0(DefaultWorkerLeaseService.java:269)
+2026-09-05T11:20:32.5024210Z 	at org.gradle.internal.work.ResourceLockStatistics$1.measure(ResourceLockStatistics.java:42)
+2026-09-05T11:20:32.5025010Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocksAcquired(DefaultWorkerLeaseService.java:267)
+2026-09-05T11:20:32.5025790Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:259)
+2026-09-05T11:20:32.5026750Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+2026-09-05T11:20:32.5027640Z 	at org.gradle.launcher.exec.RunAsWorkerThreadBuildActionExecutor.execute(RunAsWorkerThreadBuildActionExecutor.java:36)
+2026-09-05T11:20:32.5028590Z 	at org.gradle.tooling.internal.provider.continuous.ContinuousBuildActionExecutor.execute(ContinuousBuildActionExecutor.java:110)
+2026-09-05T11:20:32.5029660Z 	at org.gradle.tooling.internal.provider.SubscribableBuildActionExecutor.execute(SubscribableBuildActionExecutor.java:64)
+2026-09-05T11:20:32.5030540Z 	at org.gradle.internal.session.DefaultBuildSessionContext.execute(DefaultBuildSessionContext.java:46)
+2026-09-05T11:20:32.5031620Z 	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:106)
+2026-09-05T11:20:32.5032850Z 	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor$ActionImpl.apply(BuildSessionLifecycleBuildActionExecutor.java:94)
+2026-09-05T11:20:32.5033680Z 	at org.gradle.internal.session.BuildSessionState.run(BuildSessionState.java:73)
+2026-09-05T11:20:32.5034480Z 	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:67)
+2026-09-05T11:20:32.5035590Z 	at org.gradle.internal.buildprocess.execution.BuildSessionLifecycleBuildActionExecutor.execute(BuildSessionLifecycleBuildActionExecutor.java:45)
+2026-09-05T11:20:32.5036660Z 	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:57)
+2026-09-05T11:20:32.5037690Z 	at org.gradle.internal.buildprocess.execution.StartParamsValidatingActionExecutor.execute(StartParamsValidatingActionExecutor.java:32)
+2026-09-05T11:20:32.5038750Z 	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:51)
+2026-09-05T11:20:32.5039750Z 	at org.gradle.internal.buildprocess.execution.SessionFailureReportingActionExecutor.execute(SessionFailureReportingActionExecutor.java:39)
+2026-09-05T11:20:32.5040730Z 	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:47)
+2026-09-05T11:20:32.5041630Z 	at org.gradle.internal.buildprocess.execution.SetupLoggingActionExecutor.execute(SetupLoggingActionExecutor.java:31)
+2026-09-05T11:20:32.5042470Z 	at org.gradle.launcher.daemon.server.exec.ExecuteBuild.doBuild(ExecuteBuild.java:70)
+2026-09-05T11:20:32.5043180Z 	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+2026-09-05T11:20:32.5043950Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5044740Z 	at org.gradle.launcher.daemon.server.exec.WatchForDisconnection.execute(WatchForDisconnection.java:39)
+2026-09-05T11:20:32.5045540Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5046360Z 	at org.gradle.launcher.daemon.server.exec.ResetDeprecationLogger.execute(ResetDeprecationLogger.java:29)
+2026-09-05T11:20:32.5047160Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5048200Z 	at org.gradle.launcher.daemon.server.exec.RequestStopIfSingleUsedDaemon.execute(RequestStopIfSingleUsedDaemon.java:35)
+2026-09-05T11:20:32.5049100Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5049910Z 	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.lambda$execute$0(ForwardClientInput.java:40)
+2026-09-05T11:20:32.5050740Z 	at org.gradle.internal.daemon.clientinput.ClientInputForwarder.forwardInput(ClientInputForwarder.java:80)
+2026-09-05T11:20:32.5051530Z 	at org.gradle.launcher.daemon.server.exec.ForwardClientInput.execute(ForwardClientInput.java:37)
+2026-09-05T11:20:32.5052610Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5053840Z 	at org.gradle.launcher.daemon.server.exec.LogAndCheckHealth.execute(LogAndCheckHealth.java:53)
+2026-09-05T11:20:32.5055740Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5057130Z 	at org.gradle.launcher.daemon.server.exec.LogToClient.doBuild(LogToClient.java:63)
+2026-09-05T11:20:32.5057780Z 	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+2026-09-05T11:20:32.5059500Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5060410Z 	at org.gradle.launcher.daemon.server.exec.EstablishBuildEnvironment.doBuild(EstablishBuildEnvironment.java:84)
+2026-09-05T11:20:32.5061730Z 	at org.gradle.launcher.daemon.server.exec.BuildCommandOnly.execute(BuildCommandOnly.java:37)
+2026-09-05T11:20:32.5063060Z 	at org.gradle.launcher.daemon.server.api.DaemonCommandExecution.proceed(DaemonCommandExecution.java:104)
+2026-09-05T11:20:32.5064650Z 	at org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy$1.run(StartBuildOrRespondWithBusy.java:52)
+2026-09-05T11:20:32.5066050Z 	at org.gradle.launcher.daemon.server.DaemonStateCoordinator.lambda$runCommand$0(DaemonStateCoordinator.java:321)
+2026-09-05T11:20:32.5067050Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+2026-09-05T11:20:32.5067780Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:47)
+2026-09-05T11:20:32.5068180Z 
+2026-09-05T11:20:32.5068190Z 
+2026-09-05T11:20:32.5068450Z Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+2026-09-05T11:20:32.5068820Z 
+2026-09-05T11:20:32.5069380Z You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+2026-09-05T11:20:32.5070240Z 
+2026-09-05T11:20:32.5070760Z For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+2026-09-05T11:20:32.5071380Z 
+2026-09-05T11:20:32.5071720Z BUILD FAILED in 8s
+2026-09-05T11:20:32.5072280Z 4 actionable tasks: 4 up-to-date
+2026-09-05T11:20:32.5077270Z ERR: jnigenBuildIOS 失败，无法生成 libarc.a（Arc GLES native）
+2026-09-05T11:20:32.5105450Z ##[error]Process completed with exit code 1.
+2026-09-05T11:20:32.5218650Z ##[group]Run actions/upload-artifact@v6
+2026-09-05T11:20:32.5218900Z with:
+2026-09-05T11:20:32.5219060Z   name: build-log-v159.7
+2026-09-05T11:20:32.5219260Z   path: build-ipa.log
+2026-09-05T11:20:32.5219440Z   retention-days: 30
+2026-09-05T11:20:32.5219620Z   if-no-files-found: ignore
+2026-09-05T11:20:32.5219820Z   compression-level: 6
+2026-09-05T11:20:32.5220000Z   overwrite: false
+2026-09-05T11:20:32.5220180Z   include-hidden-files: false
+2026-09-05T11:20:32.5220370Z env:
+2026-09-05T11:20:32.5220670Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:20:32.5221050Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:20:32.5221970Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:20:32.5222570Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:20:32.5222980Z   MAVEN_ARGS: -ntp
+2026-09-05T11:20:32.5223210Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-09-05T11:20:32.5223480Z   GRADLE_USER_HOME: /Users/runner/.gradle
+2026-09-05T11:20:32.5223730Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-09-05T11:20:32.5224110Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-09-05T11:20:32.5224520Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-09-05T11:20:32.5224790Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-09-05T11:20:32.5225010Z ##[endgroup]
+2026-09-05T11:20:32.8943870Z With the provided path, there will be 1 file uploaded
+2026-09-05T11:20:32.8945340Z Artifact name is valid!
+2026-09-05T11:20:32.8947040Z Root directory input is valid!
+2026-09-05T11:20:33.2432790Z Beginning upload of artifact content to blob storage
+2026-09-05T11:20:33.4650820Z Uploaded bytes 5419
+2026-09-05T11:20:33.5061520Z Finished uploading artifact content to blob storage!
+2026-09-05T11:20:33.5167130Z SHA256 digest of uploaded artifact zip is d9157bd3bb8eaa723808ae17c69c4252e1dcf5c518a369a8c2dbd7fad81019d1
+2026-09-05T11:20:33.5268790Z Finalizing artifact upload
+2026-09-05T11:20:33.8563870Z Artifact build-log-v159.7.zip successfully finalized. Artifact ID 9968541321
+2026-09-05T11:20:33.8564750Z Artifact build-log-v159.7 has been successfully uploaded! Final size is 5419 bytes. Artifact ID is 9968541321
+2026-09-05T11:20:33.8567380Z Artifact download URL: https://github.com/FiresonZ/mindustry-ios-builder/actions/runs/33962985101/artifacts/9968541321
+2026-09-05T11:20:33.8745860Z Post job cleanup.
+2026-09-05T11:20:34.0568430Z In post-action step
+2026-09-05T11:20:34.0574250Z Enhanced Caching: This build is using the proprietary 'gradle-actions-caching' provider for optimized caching support. See https://github.com/gradle/actions/blob/main/DISTRIBUTION.md for terms of use and opt-out instructions.
+2026-09-05T11:20:34.1053000Z ##[group]Stopping Gradle daemons
+2026-09-05T11:20:34.1053720Z Stopping Gradle daemons for /Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1
+2026-09-05T11:20:34.1062780Z [command]/Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle --stop
+2026-09-05T11:20:34.9642910Z No Gradle daemons are running.
+2026-09-05T11:20:34.9745800Z ##[endgroup]
+2026-09-05T11:20:34.9847260Z ##[group]Performing cache cleanup
+2026-09-05T11:20:35.8835810Z Removed 16 files excluded from the cache (e.g. locks)
+2026-09-05T11:20:35.8836580Z Removing Gradle User Home content that was not used during the build
+2026-09-05T11:20:35.9860320Z Removed 47 inactive cross-version entries
+2026-09-05T11:20:36.1170200Z Active Gradle versions: 9.3.1
+2026-09-05T11:20:36.1249310Z ##[endgroup]
+2026-09-05T11:20:36.1249900Z ##[group]Caching Gradle state
+2026-09-05T11:20:36.3268630Z [command]/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+2026-09-05T11:20:36.4932260Z [command]/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+2026-09-05T11:20:37.5723840Z Sent 6453434 of 6453434 (100.0%), 6.1 MBs/sec
+2026-09-05T11:20:37.8176490Z Saved cache entry with key gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa from /Users/runner/.gradle/caches/build-cache-*/* in 1500ms
+2026-09-05T11:20:38.3731160Z Sent 0 of 184610629 (0.0%), 0.0 MBs/sec
+2026-09-05T11:20:39.3508450Z Sent 117501765 of 184610629 (63.6%), 55.6 MBs/sec
+2026-09-05T11:20:39.8599370Z Sent 184610629 of 184610629 (100.0%), 69.5 MBs/sec
+2026-09-05T11:20:40.0338730Z Saved cache entry with key gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9 from /Users/runner/.gradle/caches/modules-*/files-*/*/*/*/*/ in 3758ms
+2026-09-05T11:20:40.0853930Z [command]/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+2026-09-05T11:20:40.9034700Z Sent 3368071 of 3368071 (100.0%), 6.0 MBs/sec
+2026-09-05T11:20:41.0608490Z Saved cache entry with key gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262 from /Users/runner/.gradle/caches,/Users/runner/.gradle/notifications,/Users/runner/.gradle/.setup-gradle in 990ms
+2026-09-05T11:20:41.0610210Z ##[endgroup]
+2026-09-05T11:20:41.0614210Z ##[group]Generating Job Summary
+2026-09-05T11:20:41.0618440Z 
+2026-09-05T11:20:41.0618440Z 
+2026-09-05T11:20:41.0618570Z <table>
+2026-09-05T11:20:41.0618860Z     <tr>
+2026-09-05T11:20:41.0619190Z         <th>Gradle Root Project</th>
+2026-09-05T11:20:41.0619600Z         <th>Requested Tasks</th>
+2026-09-05T11:20:41.0620020Z         <th>Gradle Version</th>
+2026-09-05T11:20:41.0620380Z         <th>Build Outcome</th>
+2026-09-05T11:20:41.0621590Z         <th>Build&nbsp;Scan®</th>
+2026-09-05T11:20:41.0621940Z     </tr>
+2026-09-05T11:20:41.0622180Z     <tr>
+2026-09-05T11:20:41.0622470Z         <td>Mindustry</td>
+2026-09-05T11:20:41.0622780Z         <td>:tools:pack</td>
+2026-09-05T11:20:41.0623110Z         <td align='center'>9.3.1</td>
+2026-09-05T11:20:41.0623490Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:20:41.0624810Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:20:41.0625510Z     </tr>
+2026-09-05T11:20:41.0625750Z     <tr>
+2026-09-05T11:20:41.0625930Z         <td>Mindustry</td>
+2026-09-05T11:20:41.0626180Z         <td>:core:preGen</td>
+2026-09-05T11:20:41.0626580Z         <td align='center'>9.3.1</td>
+2026-09-05T11:20:41.0626940Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:20:41.0627790Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:20:41.0628520Z     </tr>
+2026-09-05T11:20:41.0628800Z     <tr>
+2026-09-05T11:20:41.0629060Z         <td>Mindustry</td>
+2026-09-05T11:20:41.0629430Z         <td>:Arc:arc-core:jnigenBuildIOS</td>
+2026-09-05T11:20:41.0629800Z         <td align='center'>9.3.1</td>
+2026-09-05T11:20:41.0630160Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:20:41.0631470Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:20:41.0632220Z     </tr>
+2026-09-05T11:20:41.0632500Z </table>
+2026-09-05T11:20:41.0632770Z     
+2026-09-05T11:20:41.0633020Z ============================
+2026-09-05T11:20:41.0633730Z <h4>Gradle State Caching - ⚡ Enhanced</h4>
+2026-09-05T11:20:41.0633970Z 
+2026-09-05T11:20:41.0634850Z **[Enhanced Caching](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#enhanced-caching)** uses the proprietary `gradle-actions-caching` provider. See [DISTRIBUTION.md](https://github.com/gradle/actions/blob/main/DISTRIBUTION.md) for terms of use and opt-out instructions.
+2026-09-05T11:20:41.0635870Z 
+2026-09-05T11:20:41.0636020Z <details>
+2026-09-05T11:20:41.0636440Z <summary>Entries: 7 restored (410Mb), 3 saved (185Mb) - Expand for more details</summary>
+2026-09-05T11:20:41.0636770Z 
+2026-09-05T11:20:41.0637680Z [Cache was enabled](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#caching-build-state-between-jobs) — Gradle User Home was restored from the cache and saved for use by subsequent jobs.
+2026-09-05T11:20:41.0639260Z 
+2026-09-05T11:20:41.0639720Z [Cache cleanup](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#configuring-cache-cleanup) purged stale files from Gradle User Home before saving.
+2026-09-05T11:20:41.0640260Z 
+2026-09-05T11:20:41.0640340Z <table>
+2026-09-05T11:20:41.0640710Z     <tr><td></td><th>Count</th><th>Total Size (Mb)</th><th>Total Time (ms)</th></tr>
+2026-09-05T11:20:41.0641150Z     <tr><td>Entries Restored</td>
+2026-09-05T11:20:41.0641480Z         <td>7</td>
+2026-09-05T11:20:41.0641700Z         <td>410</td>
+2026-09-05T11:20:41.0642010Z         <td>20032</td>
+2026-09-05T11:20:41.0642260Z     </tr>
+2026-09-05T11:20:41.0642510Z     <tr><td>Entries Saved</td>
+2026-09-05T11:20:41.0659870Z         <td>3</td>
+2026-09-05T11:20:41.0660180Z         <td>185</td>
+2026-09-05T11:20:41.0660550Z         <td>6248</td>
+2026-09-05T11:20:41.0660840Z     </tr>
+2026-09-05T11:20:41.0661090Z </table>
+2026-09-05T11:20:41.0661230Z 
+2026-09-05T11:20:41.0661370Z <pre>
+2026-09-05T11:20:41.0661620Z Entry: Gradle User Home
+2026-09-05T11:20:41.0662290Z     Requested Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:20:41.0663150Z     Restored  Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-afe7cfd025a819d20ff963b53c5c7446d46bc972
+2026-09-05T11:20:41.0663740Z               Size: 3 MB (3368694 B)
+2026-09-05T11:20:41.0664130Z               Time: 1330 ms
+2026-09-05T11:20:41.0664510Z               (Entry restored: partial match found)
+2026-09-05T11:20:41.0665140Z     Saved     Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:20:41.0665800Z               Size: 3 MB (3368071 B)
+2026-09-05T11:20:41.0666440Z               Time: 990 ms
+2026-09-05T11:20:41.0666760Z               (Entry saved)
+2026-09-05T11:20:41.0667070Z ---
+2026-09-05T11:20:41.0667420Z Entry: wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks
+2026-09-05T11:20:41.0667970Z     Requested Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:20:41.0668590Z     Restored  Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:20:41.0669050Z               Size: 130 MB (136344269 B)
+2026-09-05T11:20:41.0669380Z               Time: 4708 ms
+2026-09-05T11:20:41.0669750Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0670130Z     Saved     Key : 
+2026-09-05T11:20:41.0670410Z               Size: 
+2026-09-05T11:20:41.0670740Z               Time: 
+2026-09-05T11:20:41.0671050Z               (Entry not saved: contents unchanged)
+2026-09-05T11:20:41.0671390Z ---
+2026-09-05T11:20:41.0671670Z Entry: dependencies
+2026-09-05T11:20:41.0672090Z     Requested Key : gradle-dependencies-v2-a826e427810a8c3137a3688744aef4fc
+2026-09-05T11:20:41.0672650Z     Restored  Key : gradle-dependencies-v2-a826e427810a8c3137a3688744aef4fc
+2026-09-05T11:20:41.0673140Z               Size: 196 MB (205720493 B)
+2026-09-05T11:20:41.0674470Z               Time: 5038 ms
+2026-09-05T11:20:41.0674880Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0675420Z     Saved     Key : gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9
+2026-09-05T11:20:41.0675970Z               Size: 176 MB (184610629 B)
+2026-09-05T11:20:41.0676330Z               Time: 3758 ms
+2026-09-05T11:20:41.0676680Z               (Entry saved)
+2026-09-05T11:20:41.0677010Z ---
+2026-09-05T11:20:41.0677320Z Entry: instrumented-jars
+2026-09-05T11:20:41.0677830Z     Requested Key : gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:20:41.0678450Z     Restored  Key : gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:20:41.0678940Z               Size: 0 MB (235075 B)
+2026-09-05T11:20:41.0679280Z               Time: 931 ms
+2026-09-05T11:20:41.0679620Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0680020Z     Saved     Key : 
+2026-09-05T11:20:41.0680290Z               Size: 
+2026-09-05T11:20:41.0680790Z               Time: 
+2026-09-05T11:20:41.0681080Z               (Entry not saved: contents unchanged)
+2026-09-05T11:20:41.0681390Z ---
+2026-09-05T11:20:41.0681640Z Entry: build-cache
+2026-09-05T11:20:41.0682050Z     Requested Key : gradle-build-cache-v2-156479a1fb2ac6a6fe123217aa6e1d48
+2026-09-05T11:20:41.0682600Z     Restored  Key : gradle-build-cache-v2-156479a1fb2ac6a6fe123217aa6e1d48
+2026-09-05T11:20:41.0683080Z               Size: 6 MB (6775751 B)
+2026-09-05T11:20:41.0683470Z               Time: 1337 ms
+2026-09-05T11:20:41.0683780Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0684170Z     Saved     Key : gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa
+2026-09-05T11:20:41.0684690Z               Size: 6 MB (6453434 B)
+2026-09-05T11:20:41.0685060Z               Time: 1500 ms
+2026-09-05T11:20:41.0685370Z               (Entry saved)
+2026-09-05T11:20:41.0685640Z ---
+2026-09-05T11:20:41.0685890Z Entry: groovy-dsl
+2026-09-05T11:20:41.0686250Z     Requested Key : gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:20:41.0686760Z     Restored  Key : gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:20:41.0687150Z               Size: 0 MB (378898 B)
+2026-09-05T11:20:41.0687440Z               Time: 1244 ms
+2026-09-05T11:20:41.0687800Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0688120Z     Saved     Key : 
+2026-09-05T11:20:41.0688410Z               Size: 
+2026-09-05T11:20:41.0688670Z               Time: 
+2026-09-05T11:20:41.0688980Z               (Entry not saved: contents unchanged)
+2026-09-05T11:20:41.0689330Z ---
+2026-09-05T11:20:41.0689590Z Entry: transforms
+2026-09-05T11:20:41.0689980Z     Requested Key : gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:20:41.0690720Z     Restored  Key : gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:20:41.0691180Z               Size: 74 MB (77077658 B)
+2026-09-05T11:20:41.0691470Z               Time: 5444 ms
+2026-09-05T11:20:41.0691770Z               (Entry restored: exact match found)
+2026-09-05T11:20:41.0692150Z     Saved     Key : 
+2026-09-05T11:20:41.0692420Z               Size: 
+2026-09-05T11:20:41.0692660Z               Time: 
+2026-09-05T11:20:41.0692930Z               (Entry not saved: contents unchanged)
+2026-09-05T11:20:41.0693280Z </pre>
+2026-09-05T11:20:41.0693510Z </details>
+2026-09-05T11:20:41.0693660Z 
+2026-09-05T11:20:41.0694070Z ##[endgroup]
+2026-09-05T11:20:41.0694350Z Completed post-action step
+2026-09-05T11:20:41.0838220Z Post job cleanup.
+2026-09-05T11:20:41.1847580Z Post job cleanup.
+2026-09-05T11:20:41.2678240Z [command]/opt/homebrew/bin/git version
+2026-09-05T11:20:41.2862010Z git version 2.55.0
+2026-09-05T11:20:41.2883550Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/11197c46-83ac-4708-95b0-3fa75b18ae9f/.gitconfig'
+2026-09-05T11:20:41.2890490Z Temporarily overriding HOME='/Users/runner/work/_temp/11197c46-83ac-4708-95b0-3fa75b18ae9f' before making global git config changes
+2026-09-05T11:20:41.2891720Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-05T11:20:41.2894330Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:20:41.2960790Z Removing SSH command configuration
+2026-09-05T11:20:41.2965160Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-05T11:20:41.3006550Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-05T11:20:41.3606410Z fatal: No url found for submodule path 'Mindustry' in .gitmodules
+2026-09-05T11:20:41.3633650Z ##[warning]The process '/opt/homebrew/bin/git' failed with exit code 128
+2026-09-05T11:20:41.3696460Z Cleaning up orphan processes
