@@ -328,17 +328,17 @@ GRADLE_ARGS=(
   "--no-daemon"
   "--stacktrace"
 )
-echo "    RoboVM 构建参数：iosSkipSigning=true + 本地 Arc 复合构建（libarc.a 提供 IOSGLES20 native）" >&2
+echo "    RoboVM 构建参数：iosSkipSigning=true + 本地 Arc 复合构建（arc.xcframework 提供 IOSGLES20 native）" >&2
 
-# 修正 robovm.xml：剥离无效 framework arc，保留有效框架路径
+# 修正 robovm.xml：确保 arc.framework（jnigen 产物）与 MetalANGLE 相关框架声明齐全
 IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
 if [ -f "$IOS_ROBOVM_XML" ]; then
   perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
     use strict; use warnings;
     my $lib_entry = qq{<lib>libs/libarc-freetype.a</lib>};
-    # libarc.a：Arc 引擎自身的 iOS native（由 jnigen 构建，含 IOSGLES20_* GLES 绑定）。
-    # 缺它会启动即 UnsatisfiedLinkError 闪退，见下方 [6b/7] 步骤。
-    my $arc_lib_entry = qq{<lib>libs/libarc.a</lib>};
+    # 注意：Arc 引擎自身的 iOS native 现在由 <framework>arc</framework> 声明、
+    # 经 jnigen 产物 arc.xcframework（[6b/7] 注入 ios/libs）链接，不再加 <lib>libs/libarc.a</lib>。
+    # 若再加该 <lib>，RoboVM 链接时会对不存在的 ios/libs/libarc.a 做 -force_load 而失败。
 
     if (m{<libs>[\s\S]*?</libs>}) {
       s{(<libs>)([\s\S]*?)(</libs>)}{
@@ -349,14 +349,11 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
         if ($body !~ m{libs/libarc-freetype\.a}) {
           $body .= "    $lib_entry\n  ";
         }
-        if ($body !~ m{libs/libarc\.a}) {
-          $body .= "    $arc_lib_entry\n  ";
-        }
         $open . $body . $close;
       }sge;
     } else {
       s{(</(?:config|robovm)>)}
-       {  <libs>\n    <lib>z</lib>\n    $lib_entry\n    $arc_lib_entry\n  </libs>\n$1}s;
+       {  <libs>\n    <lib>z</lib>\n    $lib_entry\n  </libs>\n$1}s;
     }
 
     my $p1 = qq{<path>libs</path>};
@@ -555,10 +552,10 @@ mkdir -p "$(dirname "$IPA_FINAL")"
 cp "$IPA_FILE" "$IPA_FINAL"
 
 # ========= 关键校验：IPA 必须包含 IOSGLES20 native 符号 =========
-# 背景：若构建 Arc native（libarc）缺失，RoboVM 在运行期才报
+# 背景：若构建 Arc native（arc）缺失，RoboVM 在运行期才报
 #   UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()
 # 导致 IPA 能编译能安装、但一打开就闪退（链接期无感，纯运行期错误）。
-# jnigen 3.x 的 iOS 产物是动态 framework（libarc.framework），符号在嵌入的动态库里，
+# jnigen 3.x 的 iOS 产物是动态 framework（arc.framework），符号在嵌入的动态库里，
 # 因此同时检查主可执行文件与 .app 内所有 framework 里的二进制。
 # 缺符号就直接失败，宁可构建红 X 也不产出"能装但秒退"的坏包。
 IPA_TMP_DIR="$(mktemp -d)"
@@ -583,7 +580,7 @@ fi
 if [ "$SYM_OK" = "yes" ]; then
   echo "    ✓ 符号校验通过：含 IOSGLES20_init（Arc GLES native 已链接）" >&2
 else
-  echo "ERR: IPA 缺少 IOSGLES20_init 符号！Arc 的 GLES native（libarc）未链接，" >&2
+  echo "ERR: IPA 缺少 IOSGLES20_init 符号！Arc 的 GLES native（arc）未链接，" >&2
   echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认 jnigenBuildAllIOS 已执行" >&2
   echo "     （见 build-ipa.sh [6b/7] 步骤）。" >&2
   rm -rf "$IPA_TMP_DIR"
