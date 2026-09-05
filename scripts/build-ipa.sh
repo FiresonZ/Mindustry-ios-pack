@@ -400,7 +400,10 @@ __BUILD_IPA_PATCH_ROBOVM_XML__
   echo "    (A.3) robovm.xml 已修正：确保 arc.framework（jnigen 产物）与 MetalANGLE 框架声明齐全" >&2
 fi
 
-# 提前准备 libarc-freetype.a 及 MetalANGLEKit
+# 提前准备 libarc-freetype.a（freetype 静态库；MetalANGLE 不再手动下载到 ios/libs，
+# 改由 [6b/7] 的 :Arc:backends:backend-robovm:extractMetalANGLEKit 打进 backend-robovm jar，
+# 走官方 classpath-jar 嵌入链路 —— 手动解到 ios/libs 反而会让 RoboVM 的 Resolver 优先命中
+# 不嵌入的 xcframework 路径，导致 .app/Frameworks 里缺 MetalANGLE）
 IOS_LIBS_DIR_EARLY="${BUILD_DIR}/Mindustry/ios/libs"
 mkdir -p "$IOS_LIBS_DIR_EARLY"
 ARC_DIR="${BUILD_DIR}/Arc"
@@ -410,16 +413,6 @@ if [ -f "$REFERENCE_CP_SRC" ] && [ ! -s "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" 
   cp -f "$REFERENCE_CP_SRC" "$IOS_LIBS_DIR_EARLY/libarc-freetype.a"
   echo "      ✓ 直接从 Arc 物理目录拷贝 libarc-freetype.a" >&2
 fi
-
-# 下载 MetalANGLEKit
-echo "    (C.0) 下载 MetalANGLEKit v1.2.1" >&2
-METAL_ZIP="/tmp/MetalANGLEKit.zip"
-METAL_URL="https://github.com/libgdx/MetalANGLEKit/releases/download/v1.2.1/metalanglekit.zip"
-METAL_SHA256="c7785cbe15eb9e5962677513725c8f0e33039f344235cc7691ee5ac35ff5ea91"
-curl -fSL --connect-timeout 20 --retry 3 --retry-delay 2 -o "$METAL_ZIP" "$METAL_URL"
-echo "${METAL_SHA256}  ${METAL_ZIP}" | shasum -a 256 -c -
-unzip -q -o "$METAL_ZIP" -d "$IOS_LIBS_DIR_EARLY"
-echo "    MetalANGLEKit 解压完成" >&2
 
 # 若仍缺 libarc-freetype.a，从 jar 缓存兜底
 if [ ! -s "$IOS_LIBS_DIR_EARLY/libarc-freetype.a" ]; then
@@ -501,74 +494,82 @@ if [ -f "$VER_FILE" ]; then
   echo "    版本校验通过 ✓" >&2
 fi
 
-echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> arc.xcframework）" >&2
+echo "==> [6b/7] 构建并打包 Arc iOS native（jnigen -> arc-natives-ios.jar）" >&2
 # 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 库。
 # libarc 的源码在 arc-core/csrc/iosgl/iosgl20.cpp（JNI 符号 Java_arc_backend_robovm_IOSGLES20_*），
 # 缺失则 IPA 能装但启动即 UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退
 # （见 GRADLE_ARGS 上方注释）。
-# 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在）；
-# 产物是 XCFramework，命名为 sharedLibName + ".xcframework"（sharedLibName 是 "arc"）。
-# 任务路径前缀 :Arc: 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
-./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS || {
-  echo "ERR: jnigenBuildAllIOS 失败，无法生成 arc.xcframework（Arc GLES native）" >&2
+#
+# 【官方机制】官方 Mindustry iOS 构建的 native 提供方式（参考官方源 + jnigen 源码 IOSPackaging）：
+#   - jnigenBuildAllIOS：把 arc-core/csrc/iosgl/*.cpp 编译成 arc.xcframework（动态 framework，含 IOSGLES20_*）。
+#   - jnigenPackageAllIOS：把 arc.xcframework + 自动生成的 robovm.xml
+#     （<frameworkPaths><path>libs</path></frameworkPaths> + <framework>arc</framework>）
+#     打包成 arc-natives-ios.jar，布局为 META-INF/robovm/ios/robovm.xml + META-INF/robovm/ios/libs/arc.xcframework/。
+#   - 该 jar 必须进入 app 的 classpath，RoboVM 才会扫描到 META-INF/robovm/ios/robovm.xml，
+#     据此把 arc.xcframework 展开并链接/嵌入（libGDX 同款：implementation "...gdx-platform...:natives-ios"）。
+#
+# 【为什么之前失败】我们把 arc.xcframework / arc.framework 直接放进 Mindustry/ios/libs，
+#   再在主工程 robovm.xml 加 <frameworkPaths><path>libs</path></frameworkPaths>。
+#   链接期 OK（-framework arc -F.../ios/libs），但 RoboVM 的 AbstractTarget.copyDynamicFrameworks()
+#   只对 classpath jar 展开出的 META-INF/robovm/ios/libs 里的 framework 做嵌入，
+#   主工程 robovm.xml 加的 frameworkPaths 不会被复制进 .app/Frameworks
+#   （CI 日志里 createIPA 阶段从未出现 "Copying framework arc"），导致 IPA 缺 native。
+#   所以必须复刻官方：把 native 打进 jar 并注入 classpath。
+./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS :Arc:arc-core:jnigenPackageAllIOS || {
+  echo "ERR: jnigen iOS native 构建/打包失败（jnigenBuildAllIOS / jnigenPackageAllIOS）" >&2
   exit 1
 }
-ARC_XCFW=$(find "$BUILD_DIR/Arc/arc-core/build" \( -name "arc.xcframework" -o -name "libarc.xcframework" \) -type d 2>/dev/null | head -1 || true)
-if [ -z "$ARC_XCFW" ]; then
-  echo "ERR: jnigen 构建后未找到 arc.xcframework（在 Arc/arc-core/build 下查找）" >&2
-  echo "     当前 arc-core/build/natives 内容：" >&2
-  find "$BUILD_DIR/Arc/arc-core/build" -maxdepth 3 -type d 2>/dev/null | head -30 >&2 || true
+ARC_NATIVES_JAR="${BUILD_DIR}/Arc/arc-core/build/natives/arc-natives-ios.jar"
+if [ ! -f "$ARC_NATIVES_JAR" ]; then
+  echo "ERR: 未找到 arc-natives-ios.jar（预期在 Arc/arc-core/build/natives 下）" >&2
+  find "$BUILD_DIR/Arc/arc-core/build/natives" -maxdepth 2 -type f 2>/dev/null | head -20 >&2 || true
   exit 1
 fi
-mkdir -p "$BUILD_DIR/Mindustry/ios/libs"
-
-# 关键修复（IPA 缺 IOSGLES20 符号）：不把 arc.xcframework 直接塞给 RoboVM。
-# 原因：RoboVM 2.3.24 虽能识别 .xcframework 并用于链接
-#   （-framework arc -F.../arc.xcframework/ios-arm64，见 CI 完整链接命令），
-#   但其 AbstractTarget.copyDynamicFrameworks() 只会按 "<frameworkPath>/<name>.framework"
-#   查找并复制嵌入 .app/Frameworks；对 xcframework 展开出的子目录路径不会复制，
-#   因此链接期 OK、构建期 OK，但 IPA 里没有 arc native -> 启动 UnsatisfiedLinkError 闪退。
-# 解决办法：把 device slice 的 arc.framework 解出来，作为普通 framework 放进 ios/libs，
-#   与 MetalANGLEKit 走同一条（上游验证过的）嵌入链路。
-ARC_DEV_FW=$(find "$ARC_XCFW" -path "*/ios-arm64/arc.framework" -type d 2>/dev/null | head -1 || true)
-if [ -z "$ARC_DEV_FW" ]; then
-  # 兜底：某些命名变体（如 ios-arm64_x86_64）里再找一次，优先 device slice
-  ARC_DEV_FW=$(find "$ARC_XCFW" -path "*/ios-arm64*/arc.framework" -type d 2>/dev/null | grep -v simulator | head -1 || true)
+echo "    ✓ $(basename "$ARC_NATIVES_JAR")（$(du -h "$ARC_NATIVES_JAR" 2>/dev/null | cut -f1)）" >&2
+# 校验 jar 内部布局（robovm.xml + device slice framework）
+unzip -l "$ARC_NATIVES_JAR" 2>/dev/null | grep -E "robovm.xml|ios-arm64/arc\.framework" | head -5 >&2 || true
+# 诊断：解出 jar 内 device slice dylib，确认 IOSGLES20 符号存在
+#   （若为 0，说明 jnigen 产物本身缺 GLES 绑定，与"是否嵌入"无关，需先查 jnigen 编译）
+ARC_JAR_XCFW="$(mktemp -d)"
+unzip -q -o "$ARC_NATIVES_JAR" -d "$ARC_JAR_XCFW" \
+  'META-INF/robovm/ios/libs/arc.xcframework/ios-arm64/arc.framework/*' 2>/dev/null || true
+ARC_JAR_BIN="$ARC_JAR_XCFW/META-INF/robovm/ios/libs/arc.xcframework/ios-arm64/arc.framework/arc"
+if [ -f "$ARC_JAR_BIN" ]; then
+  echo "    [诊断] jar 内 device slice 类型: $(file "$ARC_JAR_BIN" 2>/dev/null | sed 's/^.*: //')" >&2
+  JAR_SYM=$(nm -g "$ARC_JAR_BIN" 2>/dev/null | grep -c "IOSGLES20_init" || true)
+  echo "    [诊断] arc-natives-ios.jar IOSGLES20_init 全局符号数: ${JAR_SYM:-0}" >&2
+else
+  echo "    [诊断] 未在 jar 内找到 ios-arm64/arc.framework/arc（检查 jnigen 产物结构）" >&2
+  find "$ARC_JAR_XCFW" -maxdepth 8 2>/dev/null | head -20 >&2 || true
 fi
-if [ -z "$ARC_DEV_FW" ]; then
-  echo "ERR: arc.xcframework 中未找到 device slice（ios-arm64/arc.framework）" >&2
-  find "$ARC_XCFW" -maxdepth 3 -type d 2>/dev/null | head -20 >&2 || true
-  exit 1
-fi
-rm -rf "$BUILD_DIR/Mindustry/ios/libs/arc.framework" "$BUILD_DIR/Mindustry/ios/libs/arc.xcframework"
-cp -R "$ARC_DEV_FW" "$BUILD_DIR/Mindustry/ios/libs/arc.framework"
-echo "    ✓ arc.framework (device slice) -> ios/libs" >&2
+rm -rf "$ARC_JAR_XCFW"
 
-# 诊断：确认 framework 二进制类型与 IOSGLES20 符号（若符号缺失，说明 jnigen 产物异常）
-ARC_FW_BIN="$BUILD_DIR/Mindustry/ios/libs/arc.framework/arc"
-if [ -f "$ARC_FW_BIN" ]; then
-  echo "    arc.framework/arc 类型: $(file "$ARC_FW_BIN" 2>/dev/null | sed 's/^.*: //')" >&2
-  SYM_COUNT=$(nm -g "$ARC_FW_BIN" 2>/dev/null | grep -c "IOSGLES20_init" || true)
-  echo "    arc.framework/arc IOSGLES20_init 全局符号数: ${SYM_COUNT:-0}" >&2
+# 复刻官方：把 arc-natives-ios.jar 注入 ios 工程 dependencies（绝对路径）
+IOS_GRADLE_JAR="${BUILD_DIR}/Mindustry/ios/build.gradle"
+if ! grep -qF "arc-natives-ios.jar" "$IOS_GRADLE_JAR" 2>/dev/null; then
+  perl -0777 -pi -e '
+    my $dep = qq{    implementation files("'"$ARC_NATIVES_JAR"'")\n};
+    if (s{(implementation arcModule\("backends:backend-robovm"\))}{$1\n$dep}) {
+      # 已注入
+    } else {
+      s{(\n\})}{$1\n$dep};
+    }
+  ' "$IOS_GRADLE_JAR"
+  echo "    已将 arc-natives-ios.jar 注入 ios/build.gradle dependencies（RoboVM 将扫描其 META-INF/robovm/ios）" >&2
+else
+  echo "    arc-natives-ios.jar 已在 ios/build.gradle 依赖中（跳过）" >&2
 fi
 
-# 把 ios/libs 下所有 .xcframework 的 device slice 也解成普通 .framework
-# （MetalANGLEKit / libGLESv2 / libEGL / libfeature_support 同理：
-#   它们由 backend-robovm 的 robovm.xml 声明，但复合构建出的 jar 里没有 native，
-#   必须作为普通 framework 嵌入 .app/Frameworks 才能在运行时被加载）
-for XFW in "$BUILD_DIR"/Mindustry/ios/libs/*.xcframework; do
-  [ -d "$XFW" ] || continue
-  BASE="$(basename "$XFW" .xcframework)"
-  DEV_FW=$(find "$XFW" -path "*/ios-arm64/${BASE}.framework" -type d 2>/dev/null | head -1 || true)
-  if [ -z "$DEV_FW" ]; then
-    echo "    WARN: ${BASE}.xcframework 未找到 device slice，跳过" >&2
-    continue
-  fi
-  rm -rf "$BUILD_DIR/Mindustry/ios/libs/${BASE}.framework"
-  cp -R "$DEV_FW" "$BUILD_DIR/Mindustry/ios/libs/${BASE}.framework"
-  echo "    ✓ ${BASE}.framework (device slice) -> ios/libs" >&2
-  rm -rf "$XFW"
-done
+# 复刻官方：让 backend-robovm jar 内置 MetalANGLE（extractMetalANGLEKit 下载并解压到
+#   res/META-INF/robovm/ios/libs/，最终构建重建 jar 时随 res/ 一起打进 META-INF/robovm/ios/libs，
+#   RoboVM 从该 jar 按 backend-robovm/robovm.xml 的 frameworkPath libs/ 找到并嵌入 MetalANGLE）
+./gradlew "${GRADLE_ARGS[@]}" :Arc:backends:backend-robovm:extractMetalANGLEKit || {
+  echo "WARN: extractMetalANGLEKit 失败，MetalANGLE 将退回 ios/libs xcframework 方式（可能仅链接不嵌入）" >&2
+}
+ML_DIR="${BUILD_DIR}/Arc/backends/backend-robovm/res/META-INF/robovm/ios/libs"
+if [ -d "$ML_DIR" ]; then
+  echo "    ✓ MetalANGLE 已写入 backend-robovm res/META-INF/robovm/ios/libs（$(ls "$ML_DIR" 2>/dev/null | tr '\n' ' ')）" >&2
+fi
 
 echo "==> [7/7] 构建未签名 IPA（ios:incrementConfig ios:deploy）" >&2
 
@@ -609,9 +610,15 @@ check_iosgles20() {
     || nm -g "$1" 2>/dev/null | grep -q "IOSGLES20_init"
 }
 SYM_OK="no"
+# 诊断：打印 .app 内 Frameworks 目录与嵌入的 framework 列表，便于定位缺失项
+echo "    [校验] IPA 内 .app 的 Frameworks 目录:" >&2
+find "$IPA_TMP_DIR" -path "*.app/Frameworks/*" -maxdepth 8 2>/dev/null | sed 's/^/      /' | head -30 >&2 || true
+echo "    [校验] IPA 内所有 .framework:" >&2
+find "$IPA_TMP_DIR" -name "*.framework" -type d 2>/dev/null | sed 's/^/      /' | head -30 >&2 || true
 IPA_APP_BIN="$(find "$IPA_TMP_DIR" -path "*.app/*" -type f -perm -u+x 2>/dev/null | head -1 || true)"
 if [ -n "$IPA_APP_BIN" ] && check_iosgles20 "$IPA_APP_BIN"; then
   SYM_OK="yes"
+  echo "    符号在主可执行文件中: $(basename "$IPA_APP_BIN")" >&2
 else
   for fw in $(find "$IPA_TMP_DIR" -name "*.framework" -type d 2>/dev/null); do
     if check_iosgles20 "$fw/$(basename "$fw" .framework)"; then
@@ -624,8 +631,9 @@ fi
 if [ "$SYM_OK" = "yes" ]; then
   echo "    ✓ 符号校验通过：含 IOSGLES20_init（Arc GLES native 已链接）" >&2
 else
-  echo "ERR: IPA 缺少 IOSGLES20_init 符号！Arc 的 GLES native（arc）未链接，" >&2
-  echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认 jnigenBuildAllIOS 已执行" >&2
+  echo "ERR: IPA 缺少 IOSGLES20_init 符号！Arc 的 GLES native（arc）未链接/未嵌入，" >&2
+  echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认 [6b/7] 已产出 arc-natives-ios.jar" >&2
+  echo "     且该 jar 已注入 ios/build.gradle classpath、RoboVM 扫描并嵌入（参考官方机制）。" >&2
   echo "     （见 build-ipa.sh [6b/7] 步骤）。" >&2
   rm -rf "$IPA_TMP_DIR"
   exit 1
