@@ -123,7 +123,7 @@
    - frameworkPaths 只保留 `<path>libs</path>`，删除未解析的 `${user.home}/.m2/.../arm64` 无效路径
    - 确保 `MetalANGLEKit`、`libGLESv2`、`libEGL`、`libfeature_support` 等 11 个 framework 声明齐全
 4. **MetalANGLEKit + freetype 静态库**（C 阶段）：镜像解压到 `ios/libs`，XCFramework 由 RoboVM ResolvedLocations 自动展开；`libarc-freetype.a` 优先从 Arc 物理目录 cp，兜底从依赖 jar 的 `META-INF/robovm/ios/libs` 解。
-5. **`-PnoLocalArc`**：禁用 Gradle 复合构建的 `includeBuild("../Arc")`，避免 `:Arc:*` 任务在 `DefaultIncludedBuildTaskGraph` 上报「未知子项目」。
+5. **本地 Arc 复合构建**：不使用 `-PnoLocalArc`，让 `includeBuild("../Arc")` 从源码编译 Arc。`jnigen` 会把 `arc-core/csrc/iosgl/*.cpp` 编成 `libarc.a`（含 `IOSGLES20` 的 GLES native 绑定），这是 IPA 能正常启动的前提；`-PnoLocalArc` 走 JitPack 发布 jar（无 native）会导致一启动就 `UnsatisfiedLinkError` 闪退（详见 Q4/Q5）。
 
 ---
 
@@ -166,8 +166,11 @@ Anuken 自己的 Deployment CI 是 tag push 才出正式包。按 tag 拉能保�
 **Q3：`${user.home}` 在 frameworkPaths 里为啥不行？**
 RoboVM 2.3.24 `PlatformFilter(SystemFilter)` 理论上能解析 `${user.home}`，但实测传给 clang `-F` 的是字面 `${user.home}`（未展开）。且该目录只含 `.a` 静态库、无 `.framework`，即使解析成功也无用。
 
-**Q4：`-PnoLocalArc` 为什么必须开？**
-参考仓库 VincentZyu233/Mindustry-for-ios 同样使用该参数：禁用复合构建 `includeBuild("../Arc")` 后，就不能再调用 `:Arc:natives:*` 任务（否则 `DefaultIncludedBuildTaskGraph` 报未知子项目）。本工程改为纯文件系统 cp + jar 解压方式获取 `libarc-freetype.a`。
+**Q4：为什么不用 `-PnoLocalArc`？**
+`-PnoLocalArc` 会把 Arc 换成 JitPack 发布的 jar，而这些 jar **只含 Java 字节码、不含 jnigen 编译出的 iOS native 静态库**（`libarc.a`，即 `arc-core/csrc/iosgl/iosgl20.cpp` 里的 `IOSGLES20_*` GLES 绑定）。RoboVM 对 `native` 方法在**运行时按符号绑定**（非链接期），所以缺失时 IPA 照样能编译、能安装，但一启动创建 GLES 上下文就抛 `UnsatisfiedLinkError` 闪退。因此必须保留本地 Arc 复合构建（`../Arc` 存在 + 不传 `noLocalArc`），让 jnigen 从源码产出并链接 `libarc.a`。Arc 的 freetype 静态库（`natives/natives-freetype-ios/libs/libarc-freetype.a`）仍按纯文件系统 cp 方式注入 `ios/libs`，不受影响。
+
+**Q5：App 装了之后一打开就闪退？**
+先用系统日志（`idevicesyslog` 等）看崩溃原因。若日志是 `java.lang.UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()`，就是构建走了 `-PnoLocalArc` 导致 Arc native（`libarc.a`）缺失——改用本地 Arc 复合构建（见 Q4）重新出包即可；与版本号（整数/小数）、freetype、MetalANGLEKit 版本均无关。
 
 ---
 

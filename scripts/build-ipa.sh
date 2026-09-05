@@ -75,18 +75,22 @@ echo "==> [2/7] 克隆 Arc 库到同级目录 (hash=${ARC_HASH})" >&2
 cd "$BUILD_DIR"
 git clone --depth 1 "https://github.com/Anuken/Arc.git" Arc
 cd Arc
+# 复合构建要求 Arc 与 Mindustry 的 archash 严格一致（gradle.properties 里的 archash）。
+# Arc 版本错位会编译出 native 符号不匹配的产物（运行期 UnsatisfiedLinkError / 崩溃），
+# 因此找不到指定 hash 时直接失败，不再静默回退默认分支。
 if [ -n "$ARC_HASH" ]; then
-  if git fetch --depth 50 origin "${ARC_HASH}" 2>/dev/null && git checkout "${ARC_HASH}" 2>/dev/null; then
-    echo "    已检出指定 Arc hash: ${ARC_HASH}" >&2
-  else
-    if git fetch --unshallow 2>/dev/null && git checkout "${ARC_HASH}" 2>/dev/null; then
-      echo "    已通过 unshallow 检出 Arc hash: ${ARC_HASH}" >&2
-    else
-      DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | sed -n '/HEAD branch/s/.*: //p' || echo "master")
-      echo "WARN: 指定的 Arc hash $ARC_HASH 未找到，回退到 ${DEFAULT_BRANCH} HEAD" >&2
-      git checkout "${DEFAULT_BRANCH}" || git checkout master
+  if ! git checkout "${ARC_HASH}" 2>/dev/null; then
+    # 默认分支浅克隆里通常没有旧 hash：先扩深，再尝试完整历史
+    if ! git fetch --depth 50 origin "${ARC_HASH}" 2>/dev/null; then
+      git fetch --unshallow 2>/dev/null || true
+    fi
+    if ! git checkout "${ARC_HASH}" 2>/dev/null; then
+      echo "ERR: 无法检出 Arc commit ${ARC_HASH}（Mindustry gradle.properties 的 archash）" >&2
+      echo "     为保证复合构建 native 符号与 Mindustry 版本一致，此处直接失败而非回退默认分支。" >&2
+      exit 1
     fi
   fi
+  echo "    已检出指定 Arc hash: ${ARC_HASH}" >&2
 fi
 echo "    当前 Arc commit: $(git rev-parse --short HEAD)" >&2
 
@@ -308,14 +312,23 @@ else
   echo "WARN: 未找到 ios/build.gradle，签名与版本兼容补丁将跳过！" >&2
 fi
 
+# 关键修复（IOSGLES20 闪退）：移除 -PnoLocalArc，启用本地 Arc 复合构建。
+# 原因：-PnoLocalArc 会从 JitPack 拉取 arc-core / backend-robovm 的发布 jar，
+#       而这些 jar 只含 Java 字节码、不含 jnigen 编译出的 iOS native 静态库（libarc.a）。
+#       Arc 的 GLES 后端（arc-core/csrc/iosgl/iosgl20.cpp，JNI 符号
+#       Java_arc_backend_robovm_IOSGLES20_*）只有在从源码构建（jnigen addIOS）时才会编进 libarc.a。
+#       缺失时：RoboVM 对 native 方法在运行时按符号绑定（非链接期），IPA 能编译能安装，
+#       但一启动创建 GLES20 上下文就抛
+#       UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()V -> 秒闪退。
+#       去掉该参数后，Mindustry settings.gradle 检测到 ../Arc 存在且未传 noLocalArc，
+#       会 includeBuild("../Arc")，从源码编译 Arc，jnigen 产出 libarc.a 并随 classpath 链接进 IPA。
 GRADLE_ARGS=(
   "-Prelease"
-  "-PnoLocalArc"
   "-Pbuildversion=${BUILD_VERSION}"
   "--no-daemon"
   "--stacktrace"
 )
-echo "    RoboVM 构建参数：iosSkipSigning=true + -PnoLocalArc" >&2
+echo "    RoboVM 构建参数：iosSkipSigning=true + 本地 Arc 复合构建（libarc.a 提供 IOSGLES20 native）" >&2
 
 # 修正 robovm.xml：剥离无效 framework arc，保留有效框架路径
 IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
@@ -505,6 +518,31 @@ IPA_FINAL_NAME="Mindustry-iOS-${RELEASE_TAG}_${DISPLAY_VERSION}.ipa"
 IPA_FINAL="${WORKDIR}/dist/${IPA_FINAL_NAME}"
 mkdir -p "$(dirname "$IPA_FINAL")"
 cp "$IPA_FILE" "$IPA_FINAL"
+
+# ========= 关键校验：IPA 可执行文件必须包含 IOSGLES20 native 符号 =========
+# 背景：若构建走了 -PnoLocalArc / Arc native（libarc.a）缺失，RoboVM 在运行期才报
+#   UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()
+# 导致 IPA 能编译能安装、但一打开就闪退（链接期无感，纯运行期错误）。
+# 这里用 nm 检查最终二进制是否真的含 Java_arc_backend_robovm_IOSGLES20_init，
+# 没有就直接失败，宁可构建红 X 也不产出"能装但秒退"的坏包。
+IPA_TMP_DIR="$(mktemp -d)"
+unzip -q -o "$IPA_FINAL" -d "$IPA_TMP_DIR"
+IPA_APP_BIN="$(find "$IPA_TMP_DIR" -path "*.app/*" -type f -perm -u+x 2>/dev/null | head -1 || true)"
+if [ -z "$IPA_APP_BIN" ]; then
+  echo "WARN: 未在 IPA 内找到可执行文件，跳过 IOSGLES20 符号校验" >&2
+else
+  if nm -g -arch arm64 "$IPA_APP_BIN" 2>/dev/null | grep -q "IOSGLES20_init" \
+     || nm -g "$IPA_APP_BIN" 2>/dev/null | grep -q "IOSGLES20_init"; then
+    echo "    ✓ 符号校验通过：二进制含 IOSGLES20_init（Arc GLES native 已链接）" >&2
+  else
+    echo "ERR: 二进制缺少 IOSGLES20_init 符号！Arc 的 GLES native（libarc.a）未链接，" >&2
+    echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认构建未使用 -PnoLocalArc" >&2
+    echo "     （本地 Arc 复合构建必须启用，见 build-ipa.sh GRADLE_ARGS 注释）。" >&2
+    rm -rf "$IPA_TMP_DIR"
+    exit 1
+  fi
+fi
+rm -rf "$IPA_TMP_DIR"
 
 META="${WORKDIR}/dist/${IPA_FINAL_NAME}.meta.txt"
 {
