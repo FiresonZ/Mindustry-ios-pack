@@ -328,7 +328,7 @@ GRADLE_ARGS=(
   "--no-daemon"
   "--stacktrace"
 )
-echo "    RoboVM 构建参数：iosSkipSigning=true + 本地 Arc 复合构建（arc.xcframework 提供 IOSGLES20 native）" >&2
+echo "    RoboVM 构建参数：iosSkipSigning=true + 本地 Arc 复合构建（arc.framework 提供 IOSGLES20 native）" >&2
 
 # 修正 robovm.xml：确保 arc.framework（jnigen 产物）与 MetalANGLE 相关框架声明齐全
 IOS_ROBOVM_XML="${BUILD_DIR}/Mindustry/ios/robovm.xml"
@@ -502,13 +502,12 @@ if [ -f "$VER_FILE" ]; then
 fi
 
 echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> arc.xcframework）" >&2
-# 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 静态库。
+# 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 库。
 # libarc 的源码在 arc-core/csrc/iosgl/iosgl20.cpp（JNI 符号 Java_arc_backend_robovm_IOSGLES20_*），
 # 缺失则 IPA 能装但启动即 UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退
 # （见 GRADLE_ARGS 上方注释）。
-# 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在，
-# 实际 per-target 任务带架构后缀）；产物是 XCFramework，命名为 sharedLibName + ".xcframework"，
-# 即 arc.xcframework（不是 libarc.xcframework，sharedLibName 是 "arc" 而非 "libarc"）。
+# 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在）；
+# 产物是 XCFramework，命名为 sharedLibName + ".xcframework"（sharedLibName 是 "arc"）。
 # 任务路径前缀 :Arc: 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
 ./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS || {
   echo "ERR: jnigenBuildAllIOS 失败，无法生成 arc.xcframework（Arc GLES native）" >&2
@@ -522,9 +521,54 @@ if [ -z "$ARC_XCFW" ]; then
   exit 1
 fi
 mkdir -p "$BUILD_DIR/Mindustry/ios/libs"
-rm -rf "$BUILD_DIR/Mindustry/ios/libs/$(basename "$ARC_XCFW")"
-cp -R "$ARC_XCFW" "$BUILD_DIR/Mindustry/ios/libs/"
-echo "    ✓ $(basename "$ARC_XCFW") -> ios/libs" >&2
+
+# 关键修复（IPA 缺 IOSGLES20 符号）：不把 arc.xcframework 直接塞给 RoboVM。
+# 原因：RoboVM 2.3.24 虽能识别 .xcframework 并用于链接
+#   （-framework arc -F.../arc.xcframework/ios-arm64，见 CI 完整链接命令），
+#   但其 AbstractTarget.copyDynamicFrameworks() 只会按 "<frameworkPath>/<name>.framework"
+#   查找并复制嵌入 .app/Frameworks；对 xcframework 展开出的子目录路径不会复制，
+#   因此链接期 OK、构建期 OK，但 IPA 里没有 arc native -> 启动 UnsatisfiedLinkError 闪退。
+# 解决办法：把 device slice 的 arc.framework 解出来，作为普通 framework 放进 ios/libs，
+#   与 MetalANGLEKit 走同一条（上游验证过的）嵌入链路。
+ARC_DEV_FW=$(find "$ARC_XCFW" -path "*/ios-arm64/arc.framework" -type d 2>/dev/null | head -1 || true)
+if [ -z "$ARC_DEV_FW" ]; then
+  # 兜底：某些命名变体（如 ios-arm64_x86_64）里再找一次，优先 device slice
+  ARC_DEV_FW=$(find "$ARC_XCFW" -path "*/ios-arm64*/arc.framework" -type d 2>/dev/null | grep -v simulator | head -1 || true)
+fi
+if [ -z "$ARC_DEV_FW" ]; then
+  echo "ERR: arc.xcframework 中未找到 device slice（ios-arm64/arc.framework）" >&2
+  find "$ARC_XCFW" -maxdepth 3 -type d 2>/dev/null | head -20 >&2 || true
+  exit 1
+fi
+rm -rf "$BUILD_DIR/Mindustry/ios/libs/arc.framework" "$BUILD_DIR/Mindustry/ios/libs/arc.xcframework"
+cp -R "$ARC_DEV_FW" "$BUILD_DIR/Mindustry/ios/libs/arc.framework"
+echo "    ✓ arc.framework (device slice) -> ios/libs" >&2
+
+# 诊断：确认 framework 二进制类型与 IOSGLES20 符号（若符号缺失，说明 jnigen 产物异常）
+ARC_FW_BIN="$BUILD_DIR/Mindustry/ios/libs/arc.framework/arc"
+if [ -f "$ARC_FW_BIN" ]; then
+  echo "    arc.framework/arc 类型: $(file "$ARC_FW_BIN" 2>/dev/null | sed 's/^.*: //')" >&2
+  SYM_COUNT=$(nm -g "$ARC_FW_BIN" 2>/dev/null | grep -c "IOSGLES20_init" || true)
+  echo "    arc.framework/arc IOSGLES20_init 全局符号数: ${SYM_COUNT:-0}" >&2
+fi
+
+# 把 ios/libs 下所有 .xcframework 的 device slice 也解成普通 .framework
+# （MetalANGLEKit / libGLESv2 / libEGL / libfeature_support 同理：
+#   它们由 backend-robovm 的 robovm.xml 声明，但复合构建出的 jar 里没有 native，
+#   必须作为普通 framework 嵌入 .app/Frameworks 才能在运行时被加载）
+for XFW in "$BUILD_DIR"/Mindustry/ios/libs/*.xcframework; do
+  [ -d "$XFW" ] || continue
+  BASE="$(basename "$XFW" .xcframework)"
+  DEV_FW=$(find "$XFW" -path "*/ios-arm64/${BASE}.framework" -type d 2>/dev/null | head -1 || true)
+  if [ -z "$DEV_FW" ]; then
+    echo "    WARN: ${BASE}.xcframework 未找到 device slice，跳过" >&2
+    continue
+  fi
+  rm -rf "$BUILD_DIR/Mindustry/ios/libs/${BASE}.framework"
+  cp -R "$DEV_FW" "$BUILD_DIR/Mindustry/ios/libs/${BASE}.framework"
+  echo "    ✓ ${BASE}.framework (device slice) -> ios/libs" >&2
+  rm -rf "$XFW"
+done
 
 echo "==> [7/7] 构建未签名 IPA（ios:incrementConfig ios:deploy）" >&2
 
