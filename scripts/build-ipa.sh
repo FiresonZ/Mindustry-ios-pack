@@ -336,6 +336,9 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
   perl -0777 -pi - "$IOS_ROBOVM_XML" <<'__BUILD_IPA_PATCH_ROBOVM_XML__'
     use strict; use warnings;
     my $lib_entry = qq{<lib>libs/libarc-freetype.a</lib>};
+    # libarc.a：Arc 引擎自身的 iOS native（由 jnigen 构建，含 IOSGLES20_* GLES 绑定）。
+    # 缺它会启动即 UnsatisfiedLinkError 闪退，见下方 [6b/7] 步骤。
+    my $arc_lib_entry = qq{<lib>libs/libarc.a</lib>};
 
     if (m{<libs>[\s\S]*?</libs>}) {
       s{(<libs>)([\s\S]*?)(</libs>)}{
@@ -346,11 +349,14 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
         if ($body !~ m{libs/libarc-freetype\.a}) {
           $body .= "    $lib_entry\n  ";
         }
+        if ($body !~ m{libs/libarc\.a}) {
+          $body .= "    $arc_lib_entry\n  ";
+        }
         $open . $body . $close;
       }sge;
     } else {
       s{(</(?:config|robovm)>)}
-       {  <libs>\n    <lib>z</lib>\n    $lib_entry\n  </libs>\n$1}s;
+       {  <libs>\n    <lib>z</lib>\n    $lib_entry\n    $arc_lib_entry\n  </libs>\n$1}s;
     }
 
     my $p1 = qq{<path>libs</path>};
@@ -493,6 +499,25 @@ if [ -f "$VER_FILE" ]; then
   fi
   echo "    版本校验通过 ✓" >&2
 fi
+
+echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildIOS -> libarc.a）" >&2
+# 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 静态库。
+# libarc.a 由 arc-core/csrc/iosgl/iosgl20.cpp 等源码经 jnigen 用 clang + iPhoneOS SDK 编译产出，
+# 内含 Java_arc_backend_robovm_IOSGLES20_* 等 GLES 绑定符号；缺失则 IPA 能装但启动即
+# UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退（见 GRADLE_ARGS 上方注释）。
+# 注意任务路径前缀用 :Arc:（复合构建 includeBuild("../Arc") 的根项目名，见 CI 日志）。
+./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildIOS || {
+  echo "ERR: jnigenBuildIOS 失败，无法生成 libarc.a（Arc GLES native）" >&2
+  exit 1
+}
+ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null | head -1 || true)
+if [ -z "$ARC_LIB" ]; then
+  echo "ERR: jnigen 构建后未找到 libarc.a（在 Arc/arc-core/build 下查找）" >&2
+  exit 1
+fi
+mkdir -p "$BUILD_DIR/Mindustry/ios/libs"
+cp -f "$ARC_LIB" "$BUILD_DIR/Mindustry/ios/libs/libarc.a"
+echo "    ✓ libarc.a -> ios/libs ($(stat -f%z "$ARC_LIB" 2>/dev/null) bytes)" >&2
 
 echo "==> [7/7] 构建未签名 IPA（ios:incrementConfig ios:deploy）" >&2
 
