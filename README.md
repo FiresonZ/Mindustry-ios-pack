@@ -119,11 +119,11 @@
 1. **小数构建号兼容**（A/B 阶段）：在 `ios/build.gradle` 注入 `_stripDec_bv` 辅助函数 + 替换 `.toInteger()` 为 `.replaceAll("\\..*","").toInteger()`，锁定 `app.build=BUILD_VERSION`。
 2. **签名跳过**（A 阶段）：`iosSkipSigning=true`，不走 p12 / mobileprovision / codesign。
 3. **robovm.xml 修正**（A.3）：
-   - 剥离 `<framework>arc</framework>`（arc.framework 不存在，RoboVM/Arc/MetalANGLEKit 任何位置都找不到，Xcode 15 ld 视为硬错误）
+   - 确保 `<framework>arc</framework>`（jnigen 产物 `arc.xcframework`，含 GLES native；`-PnoLocalArc` 时代不存在需剥离，现在改为确保声明）
    - frameworkPaths 只保留 `<path>libs</path>`，删除未解析的 `${user.home}/.m2/.../arm64` 无效路径
-   - 确保 `MetalANGLEKit`、`libGLESv2`、`libEGL`、`libfeature_support` 等 11 个 framework 声明齐全
+   - 确保 `MetalANGLEKit`、`libGLESv2`、`libEGL`、`libfeature_support`、`arc` 等 12 个 framework 声明齐全
 4. **MetalANGLEKit + freetype 静态库**（C 阶段）：镜像解压到 `ios/libs`，XCFramework 由 RoboVM ResolvedLocations 自动展开；`libarc-freetype.a` 优先从 Arc 物理目录 cp，兜底从依赖 jar 的 `META-INF/robovm/ios/libs` 解。
-5. **本地 Arc 复合构建 + 显式 jnigen**：不使用 `-PnoLocalArc`，让 `includeBuild("../Arc")` 从源码编译 Arc；由于 jnigen 不会自动触发，脚本显式执行 `:Arc:arc-core:jnigenBuildAllIOS`（jnigen-gradle 3.1.1 的 iOS 聚合构建任务；`jnigenBuildIOS` 不存在）把 `arc-core/csrc/iosgl/*.cpp` 编译成 `libarc.xcframework`（动态 framework，含 `IOSGLES20_*` GLES 绑定）拷入 `ios/libs`，并在 robovm.xml 声明 `<framework>libarc</framework>`（与 MetalANGLEKit 同机制）。这套 GLES native 绑定是 IPA 能正常启动的前提；`-PnoLocalArc` 走 JitPack 发布 jar（无 native）会导致一启动就 `UnsatisfiedLinkError` 闪退（详见 Q4/Q5）。
+5. **本地 Arc 复合构建 + 显式 jnigen**：不使用 `-PnoLocalArc`，让 `includeBuild("../Arc")` 从源码编译 Arc；由于 jnigen 不会自动触发，脚本显式执行 `:Arc:arc-core:jnigenBuildAllIOS`（jnigen-gradle 3.1.1 的 iOS 聚合构建任务；`jnigenBuildIOS` 不存在）把 `arc-core/csrc/iosgl/*.cpp` 编译成 `arc.xcframework`（动态 framework，含 `IOSGLES20_*` GLES 绑定）拷入 `ios/libs`，并在 robovm.xml 声明 `<framework>arc</framework>`（与 MetalANGLEKit 同机制；`-PnoLocalArc` 时代该 framework 不存在需剥离，现在由 jnigen 产出后改为确保声明）。这套 GLES native 绑定是 IPA 能正常启动的前提；`-PnoLocalArc` 走 JitPack 发布 jar（无 native）会导致一启动就 `UnsatisfiedLinkError` 闪退（详见 Q4/Q5）。
 
 ---
 
@@ -167,10 +167,10 @@ Anuken 自己的 Deployment CI 是 tag push 才出正式包。按 tag 拉能保�
 RoboVM 2.3.24 `PlatformFilter(SystemFilter)` 理论上能解析 `${user.home}`，但实测传给 clang `-F` 的是字面 `${user.home}`（未展开）。且该目录只含 `.a` 静态库、无 `.framework`，即使解析成功也无用。
 
 **Q4：为什么不用 `-PnoLocalArc`？**
-`-PnoLocalArc` 会把 Arc 换成 JitPack 发布的 jar，而这些 jar **只含 Java 字节码、不含 jnigen 编译出的 iOS native**（`libarc.xcframework`，即 `arc-core/csrc/iosgl/iosgl20.cpp` 里的 `IOSGLES20_*` GLES 绑定）。RoboVM 对 `native` 方法在**运行时按符号绑定**（非链接期），所以缺失时 IPA 照样能编译、能安装，但一启动创建 GLES 上下文就抛 `UnsatisfiedLinkError` 闪退。因此必须保留本地 Arc 复合构建（`../Arc` 存在 + 不传 `noLocalArc`），让 jnigen 从源码产出并链接 `libarc.xcframework`。Arc 的 freetype 静态库（`natives/natives-freetype-ios/libs/libarc-freetype.a`）仍按纯文件系统 cp 方式注入 `ios/libs`，不受影响。
+`-PnoLocalArc` 会把 Arc 换成 JitPack 发布的 jar，而这些 jar **只含 Java 字节码、不含 jnigen 编译出的 iOS native**（`arc.xcframework`，即 `arc-core/csrc/iosgl/iosgl20.cpp` 里的 `IOSGLES20_*` GLES 绑定）。RoboVM 对 `native` 方法在**运行时按符号绑定**（非链接期），所以缺失时 IPA 照样能编译、能安装，但一启动创建 GLES 上下文就抛 `UnsatisfiedLinkError` 闪退。因此必须保留本地 Arc 复合构建（`../Arc` 存在 + 不传 `noLocalArc`），让 jnigen 从源码产出并链接 `arc.xcframework`。Arc 的 freetype 静态库（`natives/natives-freetype-ios/libs/libarc-freetype.a`）仍按纯文件系统 cp 方式注入 `ios/libs`，不受影响。
 
 **Q5：App 装了之后一打开就闪退？**
-先用系统日志（`idevicesyslog` 等）看崩溃原因。若日志是 `java.lang.UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()`，就是 Arc native（`libarc`）缺失/未链接——确认 `jnigenBuildAllIOS` 已执行且 `libarc.xcframework` 进了 `ios/libs`（见 Q4 与补丁点 5）重新出包即可；与版本号（整数/小数）、freetype、MetalANGLEKit 版本均无关。
+先用系统日志（`idevicesyslog` 等）看崩溃原因。若日志是 `java.lang.UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()`，就是 Arc native（`arc`）缺失/未链接——确认 `jnigenBuildAllIOS` 已执行且 `arc.xcframework` 进了 `ios/libs`、robovm.xml 声明了 `<framework>arc</framework>`（见 Q4 与补丁点 5）重新出包即可；与版本号（整数/小数）、freetype、MetalANGLEKit 版本均无关。
 
 ---
 
