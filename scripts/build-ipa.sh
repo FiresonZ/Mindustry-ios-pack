@@ -377,6 +377,9 @@ if [ -f "$IOS_ROBOVM_XML" ]; then
     my @must_frameworks = (
       'UIKit', 'MetalANGLEKit', 'libGLESv2', 'libEGL', 'libfeature_support',
       'Metal', 'QuartzCore', 'CoreGraphics', 'CoreAudio', 'AudioToolbox', 'AVFoundation',
+      # libarc：Arc 引擎自身的 iOS native（jnigen 产物 libarc.xcframework，含 IOSGLES20_* GLES 绑定）。
+      # 缺它会启动即 UnsatisfiedLinkError 闪退，见下方 [6b/7] 步骤。
+      'libarc',
     );
     if (m{<frameworks>[\s\S]*?</frameworks>}) {
       s{(<frameworks>)([\s\S]*?)(</frameworks>)}{
@@ -500,31 +503,28 @@ if [ -f "$VER_FILE" ]; then
   echo "    版本校验通过 ✓" >&2
 fi
 
-echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> libarc.a）" >&2
+echo "==> [6b/7] 构建 Arc iOS native（jnigenBuildAllIOS -> libarc.xcframework）" >&2
 # 关键：复合构建不会自动触发 jnigen，必须显式构建 iOS 目标的 native 静态库。
-# libarc.a 由 arc-core/csrc/iosgl/iosgl20.cpp 等源码经 jnigen 用 clang + iPhoneOS SDK 编译产出，
-# 内含 Java_arc_backend_robovm_IOSGLES20_* 等 GLES 绑定符号；缺失则 IPA 能装但启动即
-# UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退（见 GRADLE_ARGS 上方注释）。
+# libarc 的源码在 arc-core/csrc/iosgl/iosgl20.cpp（JNI 符号 Java_arc_backend_robovm_IOSGLES20_*），
+# 缺失则 IPA 能装但启动即 UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init() 闪退
+# （见 GRADLE_ARGS 上方注释）。
 # 注意：jnigen-gradle 3.1.1 的 iOS 聚合构建任务名是 jnigenBuildAllIOS（jnigenBuildIOS 不存在，
-# 实际 per-target 任务带架构后缀，如 jnigenBuildIOS_<arch>_<bitness>），任务路径前缀 :Arc:
-# 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
+# 实际 per-target 任务带架构后缀，如 jnigenBuildIOS_<arch>_<bitness>）；产物是 XCFramework
+# （动态 framework，输出到 arc-core/build/natives/libarc.xcframework），不是 libarc.a。
+# 任务路径前缀 :Arc: 来自复合构建 includeBuild("../Arc") 的根项目名（见 CI 日志）。
 ./gradlew "${GRADLE_ARGS[@]}" :Arc:arc-core:jnigenBuildAllIOS || {
-  echo "ERR: jnigenBuildAllIOS 失败，无法生成 libarc.a（Arc GLES native）" >&2
+  echo "ERR: jnigenBuildAllIOS 失败，无法生成 libarc.xcframework（Arc GLES native）" >&2
   exit 1
 }
-# 优先取真机 arm64 的 libarc.a（排除 simulator），兜底取任意一个
-ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null \
-  | grep -iE "ios" | grep -viE "sim|simulator" | grep -iE "arm64|aarch64" | head -1 || true)
-if [ -z "$ARC_LIB" ]; then
-  ARC_LIB=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.a" -type f 2>/dev/null | head -1 || true)
-fi
-if [ -z "$ARC_LIB" ]; then
-  echo "ERR: jnigen 构建后未找到 libarc.a（在 Arc/arc-core/build 下查找）" >&2
+ARC_XCFW=$(find "$BUILD_DIR/Arc/arc-core/build" -name "libarc.xcframework" -type d 2>/dev/null | head -1 || true)
+if [ -z "$ARC_XCFW" ]; then
+  echo "ERR: jnigen 构建后未找到 libarc.xcframework（在 Arc/arc-core/build 下查找）" >&2
   exit 1
 fi
 mkdir -p "$BUILD_DIR/Mindustry/ios/libs"
-cp -f "$ARC_LIB" "$BUILD_DIR/Mindustry/ios/libs/libarc.a"
-echo "    ✓ libarc.a -> ios/libs ($(stat -f%z "$ARC_LIB" 2>/dev/null) bytes)" >&2
+rm -rf "$BUILD_DIR/Mindustry/ios/libs/libarc.xcframework"
+cp -R "$ARC_XCFW" "$BUILD_DIR/Mindustry/ios/libs/"
+echo "    ✓ libarc.xcframework -> ios/libs" >&2
 
 echo "==> [7/7] 构建未签名 IPA（ios:incrementConfig ios:deploy）" >&2
 
@@ -551,28 +551,40 @@ IPA_FINAL="${WORKDIR}/dist/${IPA_FINAL_NAME}"
 mkdir -p "$(dirname "$IPA_FINAL")"
 cp "$IPA_FILE" "$IPA_FINAL"
 
-# ========= 关键校验：IPA 可执行文件必须包含 IOSGLES20 native 符号 =========
-# 背景：若构建走了 -PnoLocalArc / Arc native（libarc.a）缺失，RoboVM 在运行期才报
+# ========= 关键校验：IPA 必须包含 IOSGLES20 native 符号 =========
+# 背景：若构建 Arc native（libarc）缺失，RoboVM 在运行期才报
 #   UnsatisfiedLinkError: arc.backend.robovm.IOSGLES20.init()
 # 导致 IPA 能编译能安装、但一打开就闪退（链接期无感，纯运行期错误）。
-# 这里用 nm 检查最终二进制是否真的含 Java_arc_backend_robovm_IOSGLES20_init，
-# 没有就直接失败，宁可构建红 X 也不产出"能装但秒退"的坏包。
+# jnigen 3.x 的 iOS 产物是动态 framework（libarc.framework），符号在嵌入的动态库里，
+# 因此同时检查主可执行文件与 .app 内所有 framework 里的二进制。
+# 缺符号就直接失败，宁可构建红 X 也不产出"能装但秒退"的坏包。
 IPA_TMP_DIR="$(mktemp -d)"
 unzip -q -o "$IPA_FINAL" -d "$IPA_TMP_DIR"
+check_iosgles20() {
+  nm -g -arch arm64 "$1" 2>/dev/null | grep -q "IOSGLES20_init" \
+    || nm -g "$1" 2>/dev/null | grep -q "IOSGLES20_init"
+}
+SYM_OK="no"
 IPA_APP_BIN="$(find "$IPA_TMP_DIR" -path "*.app/*" -type f -perm -u+x 2>/dev/null | head -1 || true)"
-if [ -z "$IPA_APP_BIN" ]; then
-  echo "WARN: 未在 IPA 内找到可执行文件，跳过 IOSGLES20 符号校验" >&2
+if [ -n "$IPA_APP_BIN" ] && check_iosgles20 "$IPA_APP_BIN"; then
+  SYM_OK="yes"
 else
-  if nm -g -arch arm64 "$IPA_APP_BIN" 2>/dev/null | grep -q "IOSGLES20_init" \
-     || nm -g "$IPA_APP_BIN" 2>/dev/null | grep -q "IOSGLES20_init"; then
-    echo "    ✓ 符号校验通过：二进制含 IOSGLES20_init（Arc GLES native 已链接）" >&2
-  else
-    echo "ERR: 二进制缺少 IOSGLES20_init 符号！Arc 的 GLES native（libarc.a）未链接，" >&2
-    echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认构建未使用 -PnoLocalArc" >&2
-    echo "     （本地 Arc 复合构建必须启用，见 build-ipa.sh GRADLE_ARGS 注释）。" >&2
-    rm -rf "$IPA_TMP_DIR"
-    exit 1
-  fi
+  for fw in $(find "$IPA_TMP_DIR" -name "*.framework" -type d 2>/dev/null); do
+    if check_iosgles20 "$fw/$(basename "$fw" .framework)"; then
+      SYM_OK="yes"
+      echo "    符号在嵌入 framework 中: $(basename "$fw")" >&2
+      break
+    fi
+  done
+fi
+if [ "$SYM_OK" = "yes" ]; then
+  echo "    ✓ 符号校验通过：含 IOSGLES20_init（Arc GLES native 已链接）" >&2
+else
+  echo "ERR: IPA 缺少 IOSGLES20_init 符号！Arc 的 GLES native（libarc）未链接，" >&2
+  echo "     安装后启动会 UnsatisfiedLinkError 闪退。请确认 jnigenBuildAllIOS 已执行" >&2
+  echo "     （见 build-ipa.sh [6b/7] 步骤）。" >&2
+  rm -rf "$IPA_TMP_DIR"
+  exit 1
 fi
 rm -rf "$IPA_TMP_DIR"
 

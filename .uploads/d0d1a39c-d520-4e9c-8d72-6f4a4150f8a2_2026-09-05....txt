@@ -1,0 +1,683 @@
+2026-09-05T11:30:37.1989590Z Current runner version: '2.337.0'
+2026-09-05T11:30:37.2006600Z ##[group]Runner Image Provisioner
+2026-09-05T11:30:37.2007110Z Hosted Compute Agent
+2026-09-05T11:30:37.2007480Z Version: 20260828.587
+2026-09-05T11:30:37.2007880Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-09-05T11:30:37.2008350Z Build Date: 2026-08-28T16:44:25Z
+2026-09-05T11:30:37.2008790Z Worker ID: {5ff5f055-853c-4f80-9227-0926befef3c2}
+2026-09-05T11:30:37.2009240Z Azure Region: westus
+2026-09-05T11:30:37.2009600Z ##[endgroup]
+2026-09-05T11:30:37.2010410Z ##[group]Operating System
+2026-09-05T11:30:37.2010790Z macOS
+2026-09-05T11:30:37.2011140Z 14.8.9
+2026-09-05T11:30:37.2011460Z 23J631
+2026-09-05T11:30:37.2011790Z ##[endgroup]
+2026-09-05T11:30:37.2012130Z ##[group]Runner Image
+2026-09-05T11:30:37.2012500Z Image: macos-14-arm64
+2026-09-05T11:30:37.2012870Z Version: 20260831.0302.1
+2026-09-05T11:30:37.2013690Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20260831.0302/images/macos/macos-14-arm64-Readme.md
+2026-09-05T11:30:37.2014720Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20260831.0302
+2026-09-05T11:30:37.2015370Z ##[endgroup]
+2026-09-05T11:30:37.2016090Z ##[group]GITHUB_TOKEN Permissions
+2026-09-05T11:30:37.2017140Z Contents: write
+2026-09-05T11:30:37.2017500Z Metadata: read
+2026-09-05T11:30:37.2017850Z ##[endgroup]
+2026-09-05T11:30:37.2019250Z Secret source: Actions
+2026-09-05T11:30:37.2019900Z Prepare workflow directory
+2026-09-05T11:30:37.2368330Z Prepare all required actions
+2026-09-05T11:30:37.2404050Z Getting action download info
+2026-09-05T11:30:37.3935740Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-09-05T11:30:37.8639140Z Download action repository 'actions/setup-java@v6' (SHA:dd06d9cba3e5552c54d9f8ea23572deb30010f7c)
+2026-09-05T11:30:39.0676240Z Download action repository 'gradle/actions@v6' (SHA:9c971963bec38e04b3d30dcc455b5382be2fdbfb)
+2026-09-05T11:30:40.8837800Z Download action repository 'actions/upload-artifact@v6' (SHA:b7c566a772e6b6bfb58ed0dc250532a479d7789f)
+2026-09-05T11:30:41.0091430Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+2026-09-05T11:30:41.7529240Z Download action repository 'actions/cache@v6' (SHA:55cc8345863c7cc4c66a329aec7e433d2d1c52a9)
+2026-09-05T11:30:41.9484320Z Complete job name: Build iOS IPA (v159.7)
+2026-09-05T11:30:41.9979190Z ##[group]Run actions/checkout@v7
+2026-09-05T11:30:41.9979570Z with:
+2026-09-05T11:30:41.9979720Z   submodules: false
+2026-09-05T11:30:41.9979910Z   repository: FiresonZ/mindustry-ios-builder
+2026-09-05T11:30:41.9981990Z   token: ***
+2026-09-05T11:30:41.9982130Z   ssh-strict: true
+2026-09-05T11:30:41.9982280Z   ssh-user: git
+2026-09-05T11:30:41.9982430Z   persist-credentials: true
+2026-09-05T11:30:41.9982620Z   clean: true
+2026-09-05T11:30:41.9982790Z   sparse-checkout-cone-mode: true
+2026-09-05T11:30:41.9983040Z   fetch-depth: 1
+2026-09-05T11:30:41.9983190Z   fetch-tags: false
+2026-09-05T11:30:41.9983370Z   show-progress: true
+2026-09-05T11:30:41.9983520Z   lfs: false
+2026-09-05T11:30:41.9983670Z   set-safe-directory: true
+2026-09-05T11:30:41.9983860Z   allow-unsafe-pr-checkout: false
+2026-09-05T11:30:41.9984160Z env:
+2026-09-05T11:30:41.9984450Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:41.9984870Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:41.9985080Z ##[endgroup]
+2026-09-05T11:30:42.4080810Z Syncing repository: FiresonZ/mindustry-ios-builder
+2026-09-05T11:30:42.4081990Z ##[group]Getting Git version info
+2026-09-05T11:30:42.4082370Z Working directory is '/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder'
+2026-09-05T11:30:42.4082890Z [command]/opt/homebrew/bin/git version
+2026-09-05T11:30:42.4177280Z git version 2.55.0
+2026-09-05T11:30:42.4260360Z ##[endgroup]
+2026-09-05T11:30:42.4302350Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/72f55291-eaea-4cdf-a541-896512bf1b54/.gitconfig'
+2026-09-05T11:30:42.4345860Z Temporarily overriding HOME='/Users/runner/work/_temp/72f55291-eaea-4cdf-a541-896512bf1b54' before making global git config changes
+2026-09-05T11:30:42.4351890Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-05T11:30:42.4381570Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:30:42.4416940Z Deleting the contents of '/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder'
+2026-09-05T11:30:42.4417770Z ##[group]Determining repository object format
+2026-09-05T11:30:42.4422840Z ##[endgroup]
+2026-09-05T11:30:42.4423810Z ##[group]Initializing the repository
+2026-09-05T11:30:42.4424380Z [command]/opt/homebrew/bin/git init /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:30:42.4673500Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-09-05T11:30:42.4678570Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-09-05T11:30:42.4699530Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-09-05T11:30:42.4702980Z hint: call:
+2026-09-05T11:30:42.4708420Z hint:
+2026-09-05T11:30:42.4712050Z hint: 	git config --global init.defaultBranch <name>
+2026-09-05T11:30:42.4717500Z hint:
+2026-09-05T11:30:42.4718850Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-09-05T11:30:42.4720440Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-09-05T11:30:42.4721530Z hint:
+2026-09-05T11:30:42.4722210Z hint: 	git branch -m <name>
+2026-09-05T11:30:42.4723490Z hint:
+2026-09-05T11:30:42.4723850Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-09-05T11:30:42.4725730Z Initialized empty Git repository in /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git/
+2026-09-05T11:30:42.4727860Z [command]/opt/homebrew/bin/git remote add origin https://github.com/FiresonZ/mindustry-ios-builder
+2026-09-05T11:30:42.4756960Z ##[endgroup]
+2026-09-05T11:30:42.4757980Z ##[group]Disabling automatic garbage collection
+2026-09-05T11:30:42.4758990Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-09-05T11:30:42.4863780Z ##[endgroup]
+2026-09-05T11:30:42.4866390Z ##[group]Setting up auth
+2026-09-05T11:30:42.4867730Z Removing SSH command configuration
+2026-09-05T11:30:42.4869070Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-05T11:30:42.4918050Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-05T11:30:42.6167860Z Removing HTTP extra header
+2026-09-05T11:30:42.6171420Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-09-05T11:30:42.6242590Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-09-05T11:30:42.7054630Z Removing includeIf entries pointing to credentials config files
+2026-09-05T11:30:42.7056670Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-09-05T11:30:42.7137720Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-09-05T11:30:42.8379390Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-507ea812-28f8-43d4-9dfb-1258b538d0d5.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-09-05T11:30:42.8381100Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git.path /Users/runner/work/_temp/git-credentials-507ea812-28f8-43d4-9dfb-1258b538d0d5.config
+2026-09-05T11:30:42.8417930Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-507ea812-28f8-43d4-9dfb-1258b538d0d5.config
+2026-09-05T11:30:42.8464860Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-507ea812-28f8-43d4-9dfb-1258b538d0d5.config
+2026-09-05T11:30:42.8509110Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-507ea812-28f8-43d4-9dfb-1258b538d0d5.config
+2026-09-05T11:30:42.8552550Z ##[endgroup]
+2026-09-05T11:30:42.8552980Z ##[group]Fetching the repository
+2026-09-05T11:30:42.8556700Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +529b62c0b10224482d11d2e236f7d8bb02885fef:refs/remotes/origin/main
+2026-09-05T11:30:43.6765870Z From https://github.com/FiresonZ/mindustry-ios-builder
+2026-09-05T11:30:43.6769770Z  * [new ref]         529b62c0b10224482d11d2e236f7d8bb02885fef -> origin/main
+2026-09-05T11:30:43.6782970Z [command]/opt/homebrew/bin/git branch --list --remote origin/main
+2026-09-05T11:30:43.6847960Z   origin/main
+2026-09-05T11:30:43.6857970Z [command]/opt/homebrew/bin/git rev-parse refs/remotes/origin/main
+2026-09-05T11:30:43.6906760Z 529b62c0b10224482d11d2e236f7d8bb02885fef
+2026-09-05T11:30:43.6911650Z ##[endgroup]
+2026-09-05T11:30:43.6912990Z ##[group]Determining the checkout info
+2026-09-05T11:30:43.6914520Z ##[endgroup]
+2026-09-05T11:30:43.6921580Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-09-05T11:30:43.7003400Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-09-05T11:30:43.7071270Z ##[group]Checking out the ref
+2026-09-05T11:30:43.7073110Z [command]/opt/homebrew/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-09-05T11:30:43.7241030Z Switched to a new branch 'main'
+2026-09-05T11:30:43.7251880Z branch 'main' set up to track 'origin/main'.
+2026-09-05T11:30:43.7254030Z ##[endgroup]
+2026-09-05T11:30:43.7335520Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-09-05T11:30:43.7394640Z 529b62c0b10224482d11d2e236f7d8bb02885fef
+2026-09-05T11:30:43.7576800Z ##[group]Run echo "Release Tag      : v159.7"
+2026-09-05T11:30:43.7577130Z [36;1mecho "Release Tag      : v159.7"[0m
+2026-09-05T11:30:43.7577360Z [36;1mecho "Build Version    : 159.7"[0m
+2026-09-05T11:30:43.7577620Z [36;1mecho "Display Version  : 8.159.7"[0m
+2026-09-05T11:30:43.7577920Z [36;1mecho "Reason           : new release detected (v159.7)"[0m
+2026-09-05T11:30:43.7578290Z [36;1mecho "macOS Version    : $(sw_vers -productVersion)"[0m
+2026-09-05T11:30:43.7578680Z [36;1mecho "Xcode Version    : $(xcodebuild -version | head -1)"[0m
+2026-09-05T11:30:43.7579130Z [36;1mecho "Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)"[0m
+2026-09-05T11:30:43.7644840Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:30:43.7645280Z env:
+2026-09-05T11:30:43.7645680Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:43.7646380Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:43.7646800Z ##[endgroup]
+2026-09-05T11:30:43.7901630Z Release Tag      : v159.7
+2026-09-05T11:30:43.7902010Z Build Version    : 159.7
+2026-09-05T11:30:43.7902350Z Display Version  : 8.159.7
+2026-09-05T11:30:43.7902630Z Reason           : new release detected (v159.7)
+2026-09-05T11:30:43.8012210Z macOS Version    : 14.8.9
+2026-09-05T11:30:44.0801960Z *** Terminating app due to uncaught exception 'NSFileHandleOperationException', reason: '*** -[_NSStdIOFileHandle writeData:]: Broken pipe'
+2026-09-05T11:30:44.0812060Z *** First throw call stack:
+2026-09-05T11:30:44.0812770Z Xcode Version    : Xcode 15.4
+2026-09-05T11:30:44.0813500Z (
+2026-09-05T11:30:44.0814260Z 	0   CoreFoundation                      0x000000019af8704c __exceptionPreprocess + 176
+2026-09-05T11:30:44.0846960Z 	1   libobjc.A.dylib                     0x000000019aa6a158 objc_exception_throw + 60
+2026-09-05T11:30:44.0847440Z 	2   Foundation                          0x000000019c70d4e4 -[NSConcreteFileHandle readDataUpToLength:error:] + 0
+2026-09-05T11:30:44.0847970Z 	3   Foundation                          0x000000019c038414 -[NSConcreteFileHandle writeData:] + 300
+2026-09-05T11:30:44.0848500Z 	4   xcodebuild                          0x0000000104328a38 -[XcodebuildPreIDEHandler handleVersionWithArguments:] + 660
+2026-09-05T11:30:44.0849050Z 	5   xcodebuild                          0x00000001043284e8 -[XcodebuildPreIDEHandler runWithArguments:] + 108
+2026-09-05T11:30:44.0849460Z 	6   xcodebuild                          0x0000000104328088 main + 380
+2026-09-05T11:30:44.0849830Z 	7   dyld                                0x000000019aaa7154 start + 2476
+2026-09-05T11:30:44.0850070Z )
+2026-09-05T11:30:44.0850300Z libc++abi: terminating due to uncaught exception of type NSException
+2026-09-05T11:30:44.0850880Z Signing Mode     : UNSIGNED (TrollStore / AltStore / Sideloadly 安装)
+2026-09-05T11:30:44.0987770Z ##[group]Run actions/setup-java@v6
+2026-09-05T11:30:44.0988010Z with:
+2026-09-05T11:30:44.0988150Z   distribution: temurin
+2026-09-05T11:30:44.0988320Z   java-version: 17
+2026-09-05T11:30:44.0988520Z   java-package: jdk
+2026-09-05T11:30:44.0988700Z   check-latest: false
+2026-09-05T11:30:44.0988890Z   force-download: false
+2026-09-05T11:30:44.0989070Z   set-default: true
+2026-09-05T11:30:44.0989240Z   server-id: github
+2026-09-05T11:30:44.0989430Z   mvn-repositories-include-central: true
+2026-09-05T11:30:44.0989740Z   mvn-repositories-prioritize-central: true
+2026-09-05T11:30:44.0990560Z   overwrite-settings: true
+2026-09-05T11:30:44.0990810Z   cache-read-only: false
+2026-09-05T11:30:44.0991050Z   job-status: success
+2026-09-05T11:30:44.0992970Z   token: ***
+2026-09-05T11:30:44.0993140Z   show-download-progress: false
+2026-09-05T11:30:44.0993340Z   problem-matcher: true
+2026-09-05T11:30:44.0993520Z env:
+2026-09-05T11:30:44.0993840Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:44.0994250Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:44.0994550Z ##[endgroup]
+2026-09-05T11:30:44.1787610Z ##[group]Installed distributions
+2026-09-05T11:30:44.1879370Z Trying to resolve the latest version from remote
+2026-09-05T11:30:44.4136060Z Resolved latest version as 17.0.20+101
+2026-09-05T11:30:44.4137050Z Trying to download...
+2026-09-05T11:30:44.4138730Z Downloading Java 17.0.20+101 (Temurin-Hotspot) from https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_aarch64_mac_hotspot_17.0.20.1_1.tar.gz ...
+2026-09-05T11:30:46.2460600Z Verifying Java package signature...
+2026-09-05T11:30:48.6135060Z Extracting Java archive...
+2026-09-05T11:30:48.6238170Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/7ade7ff9-c8f1-45d3-b654-05236bbefbdc -f /Users/runner/work/_temp/a6e5f9a6-fa3d-4071-b3ff-f7c100ff2a32
+2026-09-05T11:30:49.9495840Z Java 17.0.20+101 was downloaded
+2026-09-05T11:30:49.9496830Z Setting Java 17.0.20+101 as the default
+2026-09-05T11:30:49.9507190Z 
+2026-09-05T11:30:49.9508190Z Java configuration:
+2026-09-05T11:30:49.9508800Z   Distribution: temurin
+2026-09-05T11:30:49.9509430Z   Version: 17.0.20+101
+2026-09-05T11:30:49.9510510Z   Path: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:49.9511020Z 
+2026-09-05T11:30:49.9511650Z ##[endgroup]
+2026-09-05T11:30:49.9563540Z Creating settings.xml with server-id: github
+2026-09-05T11:30:49.9565120Z Creating toolchains.xml for JDK version 17 from temurin
+2026-09-05T11:30:49.9578120Z Writing to /Users/runner/.m2/settings.xml
+2026-09-05T11:30:49.9581080Z Writing to /Users/runner/.m2/toolchains.xml
+2026-09-05T11:30:49.9972030Z Configured MAVEN_ARGS to include -ntp to suppress Maven transfer progress logs. Set 'show-download-progress: true' to keep the download progress output.
+2026-09-05T11:30:50.0239550Z ##[group]Run java -version
+2026-09-05T11:30:50.0240000Z [36;1mjava -version[0m
+2026-09-05T11:30:50.0315500Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:30:50.0315870Z env:
+2026-09-05T11:30:50.0316280Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:50.0316700Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:50.0317200Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:50.0317800Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:50.0318250Z   MAVEN_ARGS: -ntp
+2026-09-05T11:30:50.0318450Z ##[endgroup]
+2026-09-05T11:30:50.1670660Z openjdk version "17.0.20.1" 2026-08-18
+2026-09-05T11:30:50.1671960Z OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)
+2026-09-05T11:30:50.1672960Z OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)
+2026-09-05T11:30:50.2250150Z ##[group]Run gradle/actions/setup-gradle@v6
+2026-09-05T11:30:50.2251480Z with:
+2026-09-05T11:30:50.2252240Z   cache-read-only: false
+2026-09-05T11:30:50.2252510Z   cache-cleanup: on-success
+2026-09-05T11:30:50.2252760Z   cache-provider: enhanced
+2026-09-05T11:30:50.2252960Z   cache-disabled: false
+2026-09-05T11:30:50.2253190Z   cache-write-only: false
+2026-09-05T11:30:50.2253440Z   cache-overwrite-existing: false
+2026-09-05T11:30:50.2254030Z   gradle-home-cache-includes: caches
+notifications
+
+2026-09-05T11:30:50.2254350Z   add-job-summary: always
+2026-09-05T11:30:50.2254600Z   add-job-summary-as-pr-comment: never
+2026-09-05T11:30:50.2254930Z   dependency-graph: disabled
+2026-09-05T11:30:50.2255790Z   dependency-graph-report-dir: dependency-graph-reports
+2026-09-05T11:30:50.2256480Z   dependency-graph-continue-on-failure: true
+2026-09-05T11:30:50.2257060Z   build-scan-publish: false
+2026-09-05T11:30:50.2257370Z   validate-wrappers: true
+2026-09-05T11:30:50.2257850Z   allow-snapshot-wrappers: false
+2026-09-05T11:30:50.2258090Z   gradle-home-cache-strict-match: false
+2026-09-05T11:30:50.2258510Z   workflow-job-context: null
+2026-09-05T11:30:50.2263090Z   github-token: ***
+2026-09-05T11:30:50.2263780Z env:
+2026-09-05T11:30:50.2264570Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:50.2265610Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:50.2266640Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:50.2268200Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:50.2269310Z   MAVEN_ARGS: -ntp
+2026-09-05T11:30:50.2269900Z ##[endgroup]
+2026-09-05T11:30:50.6006660Z Gradle User Home already exists at /Users/runner/.gradle
+2026-09-05T11:30:50.6034280Z Merged default JDK locations into /Users/runner/.m2/toolchains.xml
+2026-09-05T11:30:50.6037090Z Enhanced Caching: This build is using the proprietary 'gradle-actions-caching' provider for optimized caching support. See https://github.com/gradle/actions/blob/main/DISTRIBUTION.md for terms of use and opt-out instructions.
+2026-09-05T11:30:50.6787600Z ##[group]Restore Gradle state from cache
+2026-09-05T11:30:50.7925650Z Cache hit for restore-key: gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:30:50.9213830Z Received 3368071 of 3368071 (100.0%), 30.6 MBs/sec
+2026-09-05T11:30:50.9315450Z Cache Size: ~3 MB (3368071 B)
+2026-09-05T11:30:50.9360010Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/cadcc648-5c8e-4883-bc57-120e5873dc29/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:51.1954720Z Cache restored successfully
+2026-09-05T11:30:51.1964120Z Restored cache entry with key gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-529b62c0b10224482d11d2e236f7d8bb02885fef in 515ms
+2026-09-05T11:30:51.2609030Z Cache hit for: gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa
+2026-09-05T11:30:51.2613260Z Cache hit for: gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:30:51.2633760Z Cache hit for: gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:30:51.2868650Z Cache hit for: gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:30:51.2870790Z Cache hit for: gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:30:51.2872390Z Cache hit for: gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9
+2026-09-05T11:30:51.4248160Z Received 235075 of 235075 (100.0%), 2.3 MBs/sec
+2026-09-05T11:30:51.4350670Z Cache Size: ~0 MB (235075 B)
+2026-09-05T11:30:51.4538210Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/8294c650-da32-45af-8adc-a5b49c944b55/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:51.5702670Z Received 378898 of 378898 (100.0%), 2.0 MBs/sec
+2026-09-05T11:30:51.5720520Z Cache Size: ~0 MB (378898 B)
+2026-09-05T11:30:51.6205860Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/91e14b2b-91b2-4998-9403-04c943797a41/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:51.6370940Z Cache restored successfully
+2026-09-05T11:30:51.6472970Z Restored cache entry with key gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812 in 441ms
+2026-09-05T11:30:52.1440090Z Cache restored successfully
+2026-09-05T11:30:52.1531470Z Restored cache entry with key gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25 in 955ms
+2026-09-05T11:30:52.3128280Z Received 50331648 of 77077658 (65.3%), 47.4 MBs/sec
+2026-09-05T11:30:52.3230580Z Received 46137344 of 136344269 (33.8%), 43.6 MBs/sec
+2026-09-05T11:30:52.3332500Z Received 2259130 of 6453434 (35.0%), 2.2 MBs/sec
+2026-09-05T11:30:52.3782640Z Received 25165824 of 184610629 (13.6%), 24.0 MBs/sec
+2026-09-05T11:30:52.6302830Z Received 6453434 of 6453434 (100.0%), 4.7 MBs/sec
+2026-09-05T11:30:52.6403990Z Cache Size: ~6 MB (6453434 B)
+2026-09-05T11:30:52.6598930Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/5d2c4b37-3856-4db0-a997-c1044463993e/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:52.7055840Z Cache restored successfully
+2026-09-05T11:30:52.7067640Z Restored cache entry with key gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa in 1509ms
+2026-09-05T11:30:53.3287320Z Received 72883354 of 77077658 (94.6%), 34.5 MBs/sec
+2026-09-05T11:30:53.3389070Z Received 117440512 of 136344269 (86.1%), 55.7 MBs/sec
+2026-09-05T11:30:53.3798750Z Received 83886080 of 184610629 (45.4%), 39.9 MBs/sec
+2026-09-05T11:30:53.5527710Z Received 77077658 of 77077658 (100.0%), 32.7 MBs/sec
+2026-09-05T11:30:53.5634140Z Cache Size: ~74 MB (77077658 B)
+2026-09-05T11:30:53.9930370Z Received 136344269 of 136344269 (100.0%), 48.5 MBs/sec
+2026-09-05T11:30:53.9962260Z Cache Size: ~130 MB (136344269 B)
+2026-09-05T11:30:53.9982090Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/ef9dff5f-8646-4f67-93ac-52ea280c9871/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:54.0017260Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/1b258cd7-b0f2-40e8-9241-a776dfac5626/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:54.4183090Z Received 138412032 of 184610629 (75.0%), 43.4 MBs/sec
+2026-09-05T11:30:54.6571290Z Received 184610629 of 184610629 (100.0%), 53.6 MBs/sec
+2026-09-05T11:30:54.6730480Z Cache Size: ~176 MB (184610629 B)
+2026-09-05T11:30:54.6854170Z [command]/opt/homebrew/bin/gtar -xf /Users/runner/work/_temp/8ca19384-7f16-46ac-8992-5a82e8e10bb8/cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --delay-directory-restore --use-compress-program unzstd
+2026-09-05T11:30:55.0313120Z Cache restored successfully
+2026-09-05T11:30:55.0415160Z Restored cache entry with key gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98 in 3838ms
+2026-09-05T11:30:55.7455280Z Cache restored successfully
+2026-09-05T11:30:55.7494590Z Restored cache entry with key gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9 in 4550ms
+2026-09-05T11:30:56.6538250Z Cache restored successfully
+2026-09-05T11:30:56.6543450Z Restored cache entry with key gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba in 5458ms
+2026-09-05T11:30:56.6553320Z ##[endgroup]
+2026-09-05T11:30:56.6642940Z ##[group]All Gradle Wrapper jars are valid
+2026-09-05T11:30:56.6644760Z 
+2026-09-05T11:30:56.6645770Z ##[endgroup]
+2026-09-05T11:30:56.6980840Z ##[group]Run chmod +x ./scripts/build-ipa.sh
+2026-09-05T11:30:56.6981320Z [36;1mchmod +x ./scripts/build-ipa.sh[0m
+2026-09-05T11:30:56.6981780Z [36;1mset -o pipefail[0m
+2026-09-05T11:30:56.6982730Z [36;1m./scripts/build-ipa.sh 2>&1 | tee build-ipa.log | tail -150[0m
+2026-09-05T11:30:56.6983210Z [36;1m# 从脚本最后输出中解析[0m
+2026-09-05T11:30:56.6983790Z [36;1mLAST=$(tail -5 build-ipa.log | grep -E '^(IPA_OUTPUT|IPA_META|RELEASE_TAG|BUILD_VERSION|DISPLAY_VERSION)=' || true)[0m
+2026-09-05T11:30:56.6984440Z [36;1mecho "$LAST"[0m
+2026-09-05T11:30:56.6984860Z [36;1mecho "$LAST" >> "$GITHUB_OUTPUT"[0m
+2026-09-05T11:30:56.7082360Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-09-05T11:30:56.7082680Z env:
+2026-09-05T11:30:56.7083080Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:30:56.7083610Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:30:56.7084340Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:56.7085100Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:30:56.7085630Z   MAVEN_ARGS: -ntp
+2026-09-05T11:30:56.7085960Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-09-05T11:30:56.7086300Z   GRADLE_USER_HOME: /Users/runner/.gradle
+2026-09-05T11:30:56.7086660Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-09-05T11:30:56.7087130Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-09-05T11:30:56.7087690Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-09-05T11:30:56.7088130Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-09-05T11:30:56.7088480Z   BUILD_VERSION: 159.7
+2026-09-05T11:30:56.7088780Z   SKIP_SIGNING: true
+2026-09-05T11:30:56.7089060Z ##[endgroup]
+2026-09-05T11:32:58.4487020Z GL_API void           GL_APIENTRY glUniformMatrix3fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4489170Z                                   ^
+2026-09-05T11:32:58.4492250Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1842:2: warning: 'glUniformMatrix3fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4496380Z         glUniformMatrix3fv( location, count, transpose, (GLfloat*)&v[offset] );
+2026-09-05T11:32:58.4497010Z         ^
+2026-09-05T11:32:58.4503040Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:610:35: note: 'glUniformMatrix3fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4511650Z GL_API void           GL_APIENTRY glUniformMatrix3fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4579400Z                                   ^
+2026-09-05T11:32:58.4581160Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1855:2: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4582470Z         glUniformMatrix4fv( location, count, transpose, (GLfloat*)dataPtr );
+2026-09-05T11:32:58.4583060Z         ^
+2026-09-05T11:32:58.4584120Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:611:35: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4586520Z GL_API void           GL_APIENTRY glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4587280Z                                   ^
+2026-09-05T11:32:58.4588440Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1867:2: warning: 'glUniformMatrix4fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4591190Z         glUniformMatrix4fv( location, count, transpose, (GLfloat*)&v[offset] );
+2026-09-05T11:32:58.4591780Z         ^
+2026-09-05T11:32:58.4592780Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:611:35: note: 'glUniformMatrix4fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4594630Z GL_API void           GL_APIENTRY glUniformMatrix4fv (GLint location, GLsizei count, GLboolean transpose, const GLfloat* value)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4595500Z                                   ^
+2026-09-05T11:32:58.4596710Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1879:2: warning: 'glUseProgram' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4598290Z         glUseProgram( program );
+2026-09-05T11:32:58.4599980Z         ^
+2026-09-05T11:32:58.4601720Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:612:35: note: 'glUseProgram' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4603300Z GL_API void           GL_APIENTRY glUseProgram (GLuint program)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4604160Z                                   ^
+2026-09-05T11:32:58.4605540Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1890:2: warning: 'glValidateProgram' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4606870Z         glValidateProgram( program );
+2026-09-05T11:32:58.4607280Z         ^
+2026-09-05T11:32:58.4608220Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:613:35: note: 'glValidateProgram' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4609640Z GL_API void           GL_APIENTRY glValidateProgram (GLuint program)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4610230Z                                   ^
+2026-09-05T11:32:58.4611450Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1901:2: warning: 'glVertexAttrib1f' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4614400Z         glVertexAttrib1f( indx, x );
+2026-09-05T11:32:58.4614790Z         ^
+2026-09-05T11:32:58.4615820Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:614:35: note: 'glVertexAttrib1f' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4617190Z GL_API void           GL_APIENTRY glVertexAttrib1f (GLuint indx, GLfloat x)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4617780Z                                   ^
+2026-09-05T11:32:58.4619150Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1913:2: warning: 'glVertexAttrib1fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4620360Z         glVertexAttrib1fv( indx, (GLfloat*)dataPtr );
+2026-09-05T11:32:58.4620800Z         ^
+2026-09-05T11:32:58.4621810Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:615:35: note: 'glVertexAttrib1fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4623250Z GL_API void           GL_APIENTRY glVertexAttrib1fv (GLuint indx, const GLfloat* values)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4623880Z                                   ^
+2026-09-05T11:32:58.4625080Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1924:2: warning: 'glVertexAttrib2f' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4626170Z         glVertexAttrib2f( indx, x, y );
+2026-09-05T11:32:58.4626450Z         ^
+2026-09-05T11:32:58.4627360Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:616:35: note: 'glVertexAttrib2f' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4628790Z GL_API void           GL_APIENTRY glVertexAttrib2f (GLuint indx, GLfloat x, GLfloat y)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4629510Z                                   ^
+2026-09-05T11:32:58.4631360Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1936:2: warning: 'glVertexAttrib2fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4632690Z         glVertexAttrib2fv( indx, (GLfloat*)dataPtr );
+2026-09-05T11:32:58.4633080Z         ^
+2026-09-05T11:32:58.4634080Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:617:35: note: 'glVertexAttrib2fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4635530Z GL_API void           GL_APIENTRY glVertexAttrib2fv (GLuint indx, const GLfloat* values)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4636210Z                                   ^
+2026-09-05T11:32:58.4637450Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1947:2: warning: 'glVertexAttrib3f' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4639080Z         glVertexAttrib3f( indx, x, y, z );
+2026-09-05T11:32:58.4639550Z         ^
+2026-09-05T11:32:58.4640700Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:618:35: note: 'glVertexAttrib3f' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4642010Z GL_API void           GL_APIENTRY glVertexAttrib3f (GLuint indx, GLfloat x, GLfloat y, GLfloat z)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4642650Z                                   ^
+2026-09-05T11:32:58.4644110Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1959:2: warning: 'glVertexAttrib3fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4645270Z         glVertexAttrib3fv( indx, (GLfloat*)dataPtr );
+2026-09-05T11:32:58.4645760Z         ^
+2026-09-05T11:32:58.4647210Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:619:35: note: 'glVertexAttrib3fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4649420Z GL_API void           GL_APIENTRY glVertexAttrib3fv (GLuint indx, const GLfloat* values)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4650090Z                                   ^
+2026-09-05T11:32:58.4651320Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1970:2: warning: 'glVertexAttrib4f' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4652570Z         glVertexAttrib4f( indx, x, y, z, w );
+2026-09-05T11:32:58.4652960Z         ^
+2026-09-05T11:32:58.4653830Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:620:35: note: 'glVertexAttrib4f' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4655160Z GL_API void           GL_APIENTRY glVertexAttrib4f (GLuint indx, GLfloat x, GLfloat y, GLfloat z, GLfloat w)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4655830Z                                   ^
+2026-09-05T11:32:58.4657100Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1982:2: warning: 'glVertexAttrib4fv' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4658180Z         glVertexAttrib4fv( indx, (GLfloat*)dataPtr );
+2026-09-05T11:32:58.4658520Z         ^
+2026-09-05T11:32:58.4659560Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:621:35: note: 'glVertexAttrib4fv' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4660910Z GL_API void           GL_APIENTRY glVertexAttrib4fv (GLuint indx, const GLfloat* values)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4661600Z                                   ^
+2026-09-05T11:32:58.4663380Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:1994:2: warning: 'glVertexAttribPointer' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4664940Z         glVertexAttribPointer( indx, size, type, normalized, stride, dataPtr );
+2026-09-05T11:32:58.4665500Z         ^
+2026-09-05T11:32:58.4667000Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:622:35: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4668580Z GL_API void           GL_APIENTRY glVertexAttribPointer (GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* ptr)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4669420Z                                   ^
+2026-09-05T11:32:58.4670900Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:2000:63: warning: cast to 'const void *' from smaller integer type 'jint' (aka 'int') [-Wint-to-void-pointer-cast]
+2026-09-05T11:32:58.4672270Z         glVertexAttribPointer( indx, size, type, normalized, stride, (const void*)ptr );
+2026-09-05T11:32:58.4672850Z                                                                      ^~~~~~~~~~~~~~~~
+2026-09-05T11:32:58.4674130Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:2000:2: warning: 'glVertexAttribPointer' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4675490Z         glVertexAttribPointer( indx, size, type, normalized, stride, (const void*)ptr );
+2026-09-05T11:32:58.4675930Z         ^
+2026-09-05T11:32:58.4676950Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:622:35: note: 'glVertexAttribPointer' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4678400Z GL_API void           GL_APIENTRY glVertexAttribPointer (GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* ptr)   OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4679330Z                                   ^
+2026-09-05T11:32:58.4680480Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/iosgl/iosgl20.cpp:2011:2: warning: 'glViewport' is deprecated: first deprecated in iOS 12.0 - OpenGLES API deprecated. (Define GLES_SILENCE_DEPRECATION to silence these warnings) [-Wdeprecated-declarations]
+2026-09-05T11:32:58.4681650Z         glViewport( x, y, width, height );
+2026-09-05T11:32:58.4682010Z         ^
+2026-09-05T11:32:58.4682910Z /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Frameworks/OpenGLES.framework/Headers/ES2/gl.h:623:35: note: 'glViewport' has been explicitly marked deprecated here
+2026-09-05T11:32:58.4684200Z GL_API void           GL_APIENTRY glViewport (GLint x, GLint y, GLsizei width, GLsizei height) OPENGLES_DEPRECATED(ios(3.0, 12.0), tvos(9.0, 12.0));
+2026-09-05T11:32:58.4685500Z                                   ^
+2026-09-05T11:32:58.4687150Z 96 warnings generated.
+2026-09-05T11:32:58.4687730Z 163 warnings generated.
+2026-09-05T11:32:58.4690090Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/core/soloud_core_getters.cpp:324:10: warning: unused variable 'minSameVolume' [-Wunused-variable]
+2026-09-05T11:32:58.4692130Z                         float minSameVolume = volume;
+2026-09-05T11:32:58.4693870Z                               ^
+2026-09-05T11:32:58.4701670Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/core/soloud_core_getters.cpp:314:9: warning: unused variable 'lowest_volume' [-Wunused-variable]
+2026-09-05T11:32:58.4704570Z                 float lowest_volume = volume;
+2026-09-05T11:32:58.4707430Z                       ^
+2026-09-05T11:32:58.4723150Z 2 warnings generated.
+2026-09-05T11:32:58.4724660Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/filter/soloud_fftfilter.cpp:175:10: warning: unused variable 'mag' [-Wunused-variable]
+2026-09-05T11:32:58.4726100Z                         float mag = aFFTBuffer[i * 2];
+2026-09-05T11:32:58.4726570Z                               ^
+2026-09-05T11:32:58.4727380Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/filter/soloud_fftfilter.cpp:210:10: warning: unused variable 'mag' [-Wunused-variable]
+2026-09-05T11:32:58.4728180Z                         float mag = aFFTBuffer[i * 2];
+2026-09-05T11:32:58.4728560Z                               ^
+2026-09-05T11:32:58.4728870Z 2 warnings generated.
+2026-09-05T11:32:58.4729680Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/filter/soloud_dcremovalfilter.cpp:62:7: warning: variable 'prevofs' set but not used [-Wunused-but-set-variable]
+2026-09-05T11:32:58.4731170Z                 int prevofs = (mOffset + mBufferLength - 1) % mBufferLength;
+2026-09-05T11:32:58.4732680Z                     ^
+2026-09-05T11:32:58.4733680Z 1 warning generated.
+2026-09-05T11:32:58.4734320Z clang: warning: treating 'c' input as 'c++' when in C++ mode, this behavior is deprecated [-Wdeprecated]
+2026-09-05T11:32:58.4735570Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/audiosource/wav/stb_vorbis.c:5095:24: warning: ISO C++11 does not allow conversion from string literal to 'char *' [-Wwritable-strings]
+2026-09-05T11:32:58.4736790Z    f = fopen(filename, "rb");
+2026-09-05T11:32:58.4737090Z                        ^
+2026-09-05T11:32:58.4737840Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/backend/coreaudio/soloud_coreaudio.mm:89:14: warning: unused function 'coreaudio_mutex_lock' [-Wunused-function]
+2026-09-05T11:32:58.4738670Z         static void coreaudio_mutex_lock(void *mutex)
+2026-09-05T11:32:58.4740040Z                     ^
+2026-09-05T11:32:58.4740930Z /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Arc/arc-core/csrc/soloud/src/backend/coreaudio/soloud_coreaudio.mm:94:14: warning: unused function 'coreaudio_mutex_unlock' [-Wunused-function]
+2026-09-05T11:32:58.4741810Z         static void coreaudio_mutex_unlock(void *mutex)
+2026-09-05T11:32:58.4742150Z                     ^
+2026-09-05T11:32:58.4742360Z 2 warnings generated.
+2026-09-05T11:32:58.4742660Z 1 warning generated.
+2026-09-05T11:32:58.4742840Z 
+2026-09-05T11:32:58.4742980Z > Task :Arc:arc-core:jnigenBuildAllIOS
+2026-09-05T11:32:58.4743440Z ld: warning: -undefined dynamic_lookup is deprecated on iOS-simulator
+2026-09-05T11:32:58.4743940Z ld: warning: -undefined dynamic_lookup is deprecated on iOS-simulator
+2026-09-05T11:32:58.4744580Z gradle/actions: Writing build results to /Users/runner/work/_temp/.gradle-actions/build-results/build-1788607933654.json
+2026-09-05T11:32:58.4744970Z 
+2026-09-05T11:32:58.4745630Z [Incubating] Problems report is available at: file:///Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/build-root/Mindustry/build/reports/problems/problems-report.html
+2026-09-05T11:32:58.4746370Z 
+2026-09-05T11:32:58.4746690Z Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+2026-09-05T11:32:58.4747170Z 
+2026-09-05T11:32:58.4747640Z You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+2026-09-05T11:32:58.4748190Z 
+2026-09-05T11:32:58.4748790Z For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+2026-09-05T11:32:58.4749400Z 
+2026-09-05T11:32:58.4749480Z BUILD SUCCESSFUL in 46s
+2026-09-05T11:32:58.4749830Z 8 actionable tasks: 4 executed, 4 up-to-date
+2026-09-05T11:32:58.4754490Z ERR: jnigen 构建后未找到 libarc.a（在 Arc/arc-core/build 下查找）
+2026-09-05T11:32:58.4795700Z ##[error]Process completed with exit code 1.
+2026-09-05T11:32:58.5044850Z ##[group]Run actions/upload-artifact@v6
+2026-09-05T11:32:58.5045270Z with:
+2026-09-05T11:32:58.5045450Z   name: build-log-v159.7
+2026-09-05T11:32:58.5045660Z   path: build-ipa.log
+2026-09-05T11:32:58.5045860Z   retention-days: 30
+2026-09-05T11:32:58.5046060Z   if-no-files-found: ignore
+2026-09-05T11:32:58.5046310Z   compression-level: 6
+2026-09-05T11:32:58.5046550Z   overwrite: false
+2026-09-05T11:32:58.5046750Z   include-hidden-files: false
+2026-09-05T11:32:58.5046970Z env:
+2026-09-05T11:32:58.5047300Z   STATE_FILE: /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder/LAST_VERSION
+2026-09-05T11:32:58.5047710Z   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+2026-09-05T11:32:58.5048180Z   JAVA_HOME: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:32:58.5048880Z   JAVA_HOME_17_AARCH64: /Users/runner/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.20-101/aarch64/Contents/Home
+2026-09-05T11:32:58.5049340Z   MAVEN_ARGS: -ntp
+2026-09-05T11:32:58.5049850Z   GRADLE_ACTION_ID: gradle/actions/setup-gradle
+2026-09-05T11:32:58.5050170Z   GRADLE_USER_HOME: /Users/runner/.gradle
+2026-09-05T11:32:58.5050490Z   GRADLE_BUILD_ACTION_SETUP_COMPLETED: true
+2026-09-05T11:32:58.5050940Z   DEVELOCITY_INJECTION_INIT_SCRIPT_NAME: gradle-actions.inject-develocity.init.gradle
+2026-09-05T11:32:58.5051370Z   DEVELOCITY_INJECTION_CUSTOM_VALUE: gradle-actions
+2026-09-05T11:32:58.5051660Z   GITHUB_DEPENDENCY_GRAPH_ENABLED: false
+2026-09-05T11:32:58.5051900Z ##[endgroup]
+2026-09-05T11:33:00.0797790Z With the provided path, there will be 1 file uploaded
+2026-09-05T11:33:00.0801810Z Artifact name is valid!
+2026-09-05T11:33:00.0802360Z Root directory input is valid!
+2026-09-05T11:33:00.3171300Z Beginning upload of artifact content to blob storage
+2026-09-05T11:33:00.5054800Z Uploaded bytes 37292
+2026-09-05T11:33:00.5204160Z Finished uploading artifact content to blob storage!
+2026-09-05T11:33:00.5219640Z SHA256 digest of uploaded artifact zip is 6fdc9c62583f241a7ab2bff12ec1fb78af94a0588d5a5561bcaed827e82fd542
+2026-09-05T11:33:00.5221000Z Finalizing artifact upload
+2026-09-05T11:33:00.8416890Z Artifact build-log-v159.7.zip successfully finalized. Artifact ID 9968717654
+2026-09-05T11:33:00.8517420Z Artifact build-log-v159.7 has been successfully uploaded! Final size is 37292 bytes. Artifact ID is 9968717654
+2026-09-05T11:33:00.8618150Z Artifact download URL: https://github.com/FiresonZ/mindustry-ios-builder/actions/runs/33963502329/artifacts/9968717654
+2026-09-05T11:33:00.8988280Z Post job cleanup.
+2026-09-05T11:33:01.3153140Z In post-action step
+2026-09-05T11:33:01.3284060Z Enhanced Caching: This build is using the proprietary 'gradle-actions-caching' provider for optimized caching support. See https://github.com/gradle/actions/blob/main/DISTRIBUTION.md for terms of use and opt-out instructions.
+2026-09-05T11:33:01.4316340Z ##[group]Stopping Gradle daemons
+2026-09-05T11:33:01.4417840Z Stopping Gradle daemons for /Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1
+2026-09-05T11:33:01.4521400Z [command]/Users/runner/.gradle/wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks/gradle-9.3.1/bin/gradle --stop
+2026-09-05T11:33:02.6312830Z No Gradle daemons are running.
+2026-09-05T11:33:02.6931170Z ##[endgroup]
+2026-09-05T11:33:02.7033940Z ##[group]Performing cache cleanup
+2026-09-05T11:33:04.7745250Z Removed 16 files excluded from the cache (e.g. locks)
+2026-09-05T11:33:04.7835940Z Removing Gradle User Home content that was not used during the build
+2026-09-05T11:33:05.4383430Z Active Gradle versions: 9.3.1
+2026-09-05T11:33:05.4391220Z ##[endgroup]
+2026-09-05T11:33:05.4391830Z ##[group]Caching Gradle state
+2026-09-05T11:33:07.1528210Z [command]/opt/homebrew/bin/gtar --posix -cf cache.tzst --exclude cache.tzst -P -C /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder --files-from manifest.txt --delay-directory-restore --use-compress-program zstdmt
+2026-09-05T11:33:07.6247490Z Sent 3368312 of 3368312 (100.0%), 18.5 MBs/sec
+2026-09-05T11:33:07.7284650Z Saved cache entry with key gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-529b62c0b10224482d11d2e236f7d8bb02885fef from /Users/runner/.gradle/caches,/Users/runner/.gradle/notifications,/Users/runner/.gradle/.setup-gradle in 630ms
+2026-09-05T11:33:07.7289270Z ##[endgroup]
+2026-09-05T11:33:07.7290460Z ##[group]Generating Job Summary
+2026-09-05T11:33:07.7290910Z 
+2026-09-05T11:33:07.7291050Z 
+2026-09-05T11:33:07.7292170Z <table>
+2026-09-05T11:33:07.7292770Z     <tr>
+2026-09-05T11:33:07.7293260Z         <th>Gradle Root Project</th>
+2026-09-05T11:33:07.7295010Z         <th>Requested Tasks</th>
+2026-09-05T11:33:07.7295750Z         <th>Gradle Version</th>
+2026-09-05T11:33:07.7296360Z         <th>Build Outcome</th>
+2026-09-05T11:33:07.7299530Z         <th>Build&nbsp;Scan®</th>
+2026-09-05T11:33:07.7300150Z     </tr>
+2026-09-05T11:33:07.7302040Z     <tr>
+2026-09-05T11:33:07.7303600Z         <td>Mindustry</td>
+2026-09-05T11:33:07.7306300Z         <td>:tools:pack</td>
+2026-09-05T11:33:07.7309220Z         <td align='center'>9.3.1</td>
+2026-09-05T11:33:07.7309730Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:33:07.7311310Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:33:07.7313920Z     </tr>
+2026-09-05T11:33:07.7314190Z     <tr>
+2026-09-05T11:33:07.7314460Z         <td>Mindustry</td>
+2026-09-05T11:33:07.7314870Z         <td>:core:preGen</td>
+2026-09-05T11:33:07.7316430Z         <td align='center'>9.3.1</td>
+2026-09-05T11:33:07.7318220Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:33:07.7319260Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:33:07.7320970Z     </tr>
+2026-09-05T11:33:07.7322100Z     <tr>
+2026-09-05T11:33:07.7323050Z         <td>Mindustry</td>
+2026-09-05T11:33:07.7325040Z         <td>:Arc:arc-core:jnigenBuildAllIOS</td>
+2026-09-05T11:33:07.7325940Z         <td align='center'>9.3.1</td>
+2026-09-05T11:33:07.7326880Z         <td align='center'>:white_check_mark:</td>
+2026-09-05T11:33:07.7329240Z         <td><a href="https://scans.gradle.com" rel="nofollow" target="_blank"><img src="https://img.shields.io/badge/Not%20published-lightgrey" alt="Build Scan not published" /></a></td>
+2026-09-05T11:33:07.7333120Z     </tr>
+2026-09-05T11:33:07.7334140Z </table>
+2026-09-05T11:33:07.7335480Z     
+2026-09-05T11:33:07.7336410Z ============================
+2026-09-05T11:33:07.7337890Z <h4>Gradle State Caching - ⚡ Enhanced</h4>
+2026-09-05T11:33:07.7338500Z 
+2026-09-05T11:33:07.7340860Z **[Enhanced Caching](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#enhanced-caching)** uses the proprietary `gradle-actions-caching` provider. See [DISTRIBUTION.md](https://github.com/gradle/actions/blob/main/DISTRIBUTION.md) for terms of use and opt-out instructions.
+2026-09-05T11:33:07.7343790Z 
+2026-09-05T11:33:07.7344110Z <details>
+2026-09-05T11:33:07.7345210Z <summary>Entries: 7 restored (390Mb), 1 saved (3Mb) - Expand for more details</summary>
+2026-09-05T11:33:07.7346350Z 
+2026-09-05T11:33:07.7348470Z [Cache was enabled](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#caching-build-state-between-jobs) — Gradle User Home was restored from the cache and saved for use by subsequent jobs.
+2026-09-05T11:33:07.7350440Z 
+2026-09-05T11:33:07.7351800Z [Cache cleanup](https://github.com/gradle/actions/blob/main/docs/setup-gradle.md#configuring-cache-cleanup) purged stale files from Gradle User Home before saving.
+2026-09-05T11:33:07.7353600Z 
+2026-09-05T11:33:07.7353950Z <table>
+2026-09-05T11:33:07.7355180Z     <tr><td></td><th>Count</th><th>Total Size (Mb)</th><th>Total Time (ms)</th></tr>
+2026-09-05T11:33:07.7356460Z     <tr><td>Entries Restored</td>
+2026-09-05T11:33:07.7357710Z         <td>7</td>
+2026-09-05T11:33:07.7358400Z         <td>390</td>
+2026-09-05T11:33:07.7360370Z         <td>17266</td>
+2026-09-05T11:33:07.7360980Z     </tr>
+2026-09-05T11:33:07.7361810Z     <tr><td>Entries Saved</td>
+2026-09-05T11:33:07.7363260Z         <td>1</td>
+2026-09-05T11:33:07.7364140Z         <td>3</td>
+2026-09-05T11:33:07.7365110Z         <td>630</td>
+2026-09-05T11:33:07.7365900Z     </tr>
+2026-09-05T11:33:07.7366470Z </table>
+2026-09-05T11:33:07.7403400Z 
+2026-09-05T11:33:07.7403820Z <pre>
+2026-09-05T11:33:07.7404510Z Entry: Gradle User Home
+2026-09-05T11:33:07.7406190Z     Requested Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-529b62c0b10224482d11d2e236f7d8bb02885fef
+2026-09-05T11:33:07.7408690Z     Restored  Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-c025f7d94e11d8e914725884913ec5e554045262
+2026-09-05T11:33:07.7410530Z               Size: 3 MB (3368071 B)
+2026-09-05T11:33:07.7411570Z               Time: 515 ms
+2026-09-05T11:33:07.7412300Z               (Entry restored: partial match found)
+2026-09-05T11:33:07.7414010Z     Saved     Key : gradle-home-v2|macOS-ARM64|build-ipa[ea4e458dc1726cd08f7c7f5aaba6b74f]-529b62c0b10224482d11d2e236f7d8bb02885fef
+2026-09-05T11:33:07.7415750Z               Size: 3 MB (3368312 B)
+2026-09-05T11:33:07.7416630Z               Time: 630 ms
+2026-09-05T11:33:07.7417600Z               (Entry saved)
+2026-09-05T11:33:07.7418340Z ---
+2026-09-05T11:33:07.7419310Z Entry: wrapper/dists/gradle-9.3.1-bin/23ovyewtku6u96viwx3xl3oks
+2026-09-05T11:33:07.7420720Z     Requested Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:33:07.7422060Z     Restored  Key : gradle-wrapper-zips-v2-8c0de4c6bda6041d6e054bf825a89c98
+2026-09-05T11:33:07.7423280Z               Size: 130 MB (136344269 B)
+2026-09-05T11:33:07.7424350Z               Time: 3838 ms
+2026-09-05T11:33:07.7425010Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7425850Z     Saved     Key : 
+2026-09-05T11:33:07.7426770Z               Size: 
+2026-09-05T11:33:07.7427470Z               Time: 
+2026-09-05T11:33:07.7428290Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7429210Z ---
+2026-09-05T11:33:07.7429850Z Entry: dependencies
+2026-09-05T11:33:07.7430780Z     Requested Key : gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9
+2026-09-05T11:33:07.7432240Z     Restored  Key : gradle-dependencies-v2-34f146e59e25d449bcafc197e268f6c9
+2026-09-05T11:33:07.7433560Z               Size: 176 MB (184610629 B)
+2026-09-05T11:33:07.7435270Z               Time: 4550 ms
+2026-09-05T11:33:07.7436120Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7437070Z     Saved     Key : 
+2026-09-05T11:33:07.7437670Z               Size: 
+2026-09-05T11:33:07.7438190Z               Time: 
+2026-09-05T11:33:07.7438960Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7439760Z ---
+2026-09-05T11:33:07.7440380Z Entry: instrumented-jars
+2026-09-05T11:33:07.7441560Z     Requested Key : gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:33:07.7443030Z     Restored  Key : gradle-instrumented-jars-v2-efe5697ada14a00dc87af87230a83812
+2026-09-05T11:33:07.7444440Z               Size: 0 MB (235075 B)
+2026-09-05T11:33:07.7445230Z               Time: 441 ms
+2026-09-05T11:33:07.7445890Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7446600Z     Saved     Key : 
+2026-09-05T11:33:07.7447350Z               Size: 
+2026-09-05T11:33:07.7448060Z               Time: 
+2026-09-05T11:33:07.7448860Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7449800Z ---
+2026-09-05T11:33:07.7450460Z Entry: build-cache
+2026-09-05T11:33:07.7451370Z     Requested Key : gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa
+2026-09-05T11:33:07.7452800Z     Restored  Key : gradle-build-cache-v2-4ddb6ef0614ade035bbeeb0761de75fa
+2026-09-05T11:33:07.7453820Z               Size: 6 MB (6453434 B)
+2026-09-05T11:33:07.7454480Z               Time: 1509 ms
+2026-09-05T11:33:07.7455140Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7457620Z     Saved     Key : 
+2026-09-05T11:33:07.7458070Z               Size: 
+2026-09-05T11:33:07.7458270Z               Time: 
+2026-09-05T11:33:07.7458570Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7458890Z ---
+2026-09-05T11:33:07.7459330Z Entry: groovy-dsl
+2026-09-05T11:33:07.7459760Z     Requested Key : gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:33:07.7460270Z     Restored  Key : gradle-groovy-dsl-v2-91df5543d66ecc1db986742b4b5eac25
+2026-09-05T11:33:07.7460630Z               Size: 0 MB (378898 B)
+2026-09-05T11:33:07.7460980Z               Time: 955 ms
+2026-09-05T11:33:07.7461300Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7461570Z     Saved     Key : 
+2026-09-05T11:33:07.7462770Z               Size: 
+2026-09-05T11:33:07.7463220Z               Time: 
+2026-09-05T11:33:07.7463480Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7463760Z ---
+2026-09-05T11:33:07.7463930Z Entry: transforms
+2026-09-05T11:33:07.7464300Z     Requested Key : gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:33:07.7464970Z     Restored  Key : gradle-transforms-v2-728e250ec53eb6d7b57045177d099fba
+2026-09-05T11:33:07.7465410Z               Size: 74 MB (77077658 B)
+2026-09-05T11:33:07.7465680Z               Time: 5458 ms
+2026-09-05T11:33:07.7466040Z               (Entry restored: exact match found)
+2026-09-05T11:33:07.7466350Z     Saved     Key : 
+2026-09-05T11:33:07.7466620Z               Size: 
+2026-09-05T11:33:07.7466830Z               Time: 
+2026-09-05T11:33:07.7467060Z               (Entry not saved: contents unchanged)
+2026-09-05T11:33:07.7467420Z </pre>
+2026-09-05T11:33:07.7467590Z </details>
+2026-09-05T11:33:07.7467690Z 
+2026-09-05T11:33:07.7468100Z ##[endgroup]
+2026-09-05T11:33:07.7468410Z Completed post-action step
+2026-09-05T11:33:07.7657490Z Post job cleanup.
+2026-09-05T11:33:07.9170040Z Post job cleanup.
+2026-09-05T11:33:08.0096020Z [command]/opt/homebrew/bin/git version
+2026-09-05T11:33:08.0350920Z git version 2.55.0
+2026-09-05T11:33:08.0369850Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/0b06f9b1-c1e7-4f28-945b-2fcca2f61a73/.gitconfig'
+2026-09-05T11:33:08.0379080Z Temporarily overriding HOME='/Users/runner/work/_temp/0b06f9b1-c1e7-4f28-945b-2fcca2f61a73' before making global git config changes
+2026-09-05T11:33:08.0380630Z Adding repository directory to the temporary git global config as a safe directory
+2026-09-05T11:33:08.0384330Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/mindustry-ios-builder/mindustry-ios-builder
+2026-09-05T11:33:08.0496150Z Removing SSH command configuration
+2026-09-05T11:33:08.0501910Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-09-05T11:33:08.0570040Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-09-05T11:33:08.2633830Z fatal: No url found for submodule path 'Mindustry' in .gitmodules
+2026-09-05T11:33:08.2845280Z ##[warning]The process '/opt/homebrew/bin/git' failed with exit code 128
+2026-09-05T11:33:08.2942620Z Cleaning up orphan processes
